@@ -38,6 +38,15 @@ class _WordListScreenState extends State<WordListScreen> {
       appBar: AppBar(
         title: const Text('我的單字本'),
         actions: [
+          if (_words.length >= 3)
+            IconButton(
+              icon: const Icon(Icons.quiz),
+              tooltip: '開始複習',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const QuizScreen()),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () async {
@@ -57,59 +66,38 @@ class _WordListScreenState extends State<WordListScreen> {
                 style: TextStyle(color: Colors.grey),
               ),
             )
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _words.length,
-                    itemBuilder: (context, index) {
-                      final word = _words[index];
-                      return Dismissible(
-                        key: Key('word_${word.id}'),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 16),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        onDismissed: (_) => _deleteWord(word.id!),
-                        child: ListTile(
-                          title: Text(
-                            word.english,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(word.chinese),
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AddWordScreen(word: word),
-                              ),
-                            );
-                            await _loadWords();
-                          },
+          : ListView.builder(
+              itemCount: _words.length,
+              itemBuilder: (context, index) {
+                final word = _words[index];
+                return Dismissible(
+                  key: Key('word_${word.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 16),
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  onDismissed: (_) => _deleteWord(word.id!),
+                  child: ListTile(
+                    title: Text(
+                      word.english,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(word.chinese),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AddWordScreen(word: word),
                         ),
                       );
+                      await _loadWords();
                     },
                   ),
-                ),
-                if (_words.length >= 3)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const QuizScreen()),
-                        ),
-                        icon: const Icon(Icons.quiz),
-                        label: const Text('開始複習'),
-                      ),
-                    ),
-                  ),
-              ],
+                );
+              },
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {

@@ -60,9 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     for (final p in AiProvider.values) {
       await _settings.setApiKey(p, _keyControllers[p]!.text.trim());
     }
-    if (_selectedProvider != null) {
-      await _settings.setSelectedProvider(_selectedProvider!);
-    }
+    await _settings.setSelectedProvider(_selectedProvider);
     for (final field in SettingsService.promptFields) {
       final text = _promptControllers[field]!.text.trim();
       await _settings.setPrompt(
@@ -89,93 +87,130 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: const Text('設定')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          const Text(
-            '選擇 AI 提供者',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          RadioGroup<AiProvider>(
-            groupValue: _selectedProvider,
-            onChanged: (v) => setState(() => _selectedProvider = v),
-            child: Column(
-              children: AiProvider.values
-                  .map((p) => RadioListTile<AiProvider>(
-                        title: Text('${p.displayName} (${p.modelName})'),
-                        value: p,
-                      ))
-                  .toList(),
-            ),
-          ),
-          const Divider(height: 32),
-          const Text(
-            'API Keys',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...AiProvider.values.map(
-            (p) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: TextField(
-                controller: _keyControllers[p],
-                obscureText: _obscured[p]!,
-                decoration: InputDecoration(
-                  labelText: '${p.displayName} API Key',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscured[p]! ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscured[p] = !_obscured[p]!),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                ExpansionTile(
+                  title: const Text(
+                    '選擇 AI 提供者',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ),
-            ),
-          ),
-          const Divider(height: 32),
-          ExpansionTile(
-            title: const Text(
-              'AI 提示詞設定',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            subtitle: const Text('用 {word} 代表輸入的英文單字'),
-            tilePadding: EdgeInsets.zero,
-            children: SettingsService.promptFields.map((field) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  tilePadding: EdgeInsets.zero,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          SettingsService.promptLabel(field),
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () => _resetPrompt(field),
-                          child: const Text('還原預設'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    TextField(
-                      controller: _promptControllers[field],
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
+                    RadioGroup<AiProvider?>(
+                      groupValue: _selectedProvider,
+                      onChanged: (v) => setState(() => _selectedProvider = v),
+                      child: Column(
+                        children: [
+                          const RadioListTile<AiProvider?>(
+                            title: Text('無'),
+                            value: null,
+                          ),
+                          ...AiProvider.values.map((p) =>
+                              RadioListTile<AiProvider?>(
+                                title: Text(
+                                    '${p.displayName} (${p.modelName})'),
+                                value: p,
+                              )),
+                        ],
                       ),
-                      maxLines: 4,
                     ),
                   ],
                 ),
-              );
-            }).toList(),
+                ExpansionTile(
+                  title: const Text(
+                    'API Keys',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  tilePadding: EdgeInsets.zero,
+                  children: [
+                    const SizedBox(height: 8),
+                    ...AiProvider.values.map(
+                      (p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: TextField(
+                          controller: _keyControllers[p],
+                          obscureText: _obscured[p]!,
+                          decoration: InputDecoration(
+                            labelText: '${p.displayName} API Key',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscured[p]!
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscured[p] = !_obscured[p]!),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                ExpansionTile(
+                  title: const Text(
+                    'AI 提示詞設定',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  tilePadding: EdgeInsets.zero,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        '用 {word} 代表輸入的英文單字',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    ...SettingsService.promptFields.map((field) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    SettingsService.promptLabel(field),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  const Spacer(),
+                                  TextButton(
+                                    onPressed: () => _resetPrompt(field),
+                                    child: const Text('還原預設'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: _promptControllers[field],
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                ),
+                                maxLines: 4,
+                              ),
+                            ],
+                          ),
+                        )),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(onPressed: _save, child: const Text('儲存')),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _save,
+                child: const Text('儲存'),
+              ),
+            ),
+          ),
         ],
       ),
     );

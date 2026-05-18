@@ -65,9 +65,13 @@ class SettingsService {
     }
   }
 
-  Future<void> setSelectedProvider(AiProvider provider) async {
+  Future<void> setSelectedProvider(AiProvider? provider) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_providerKey, provider.name);
+    if (provider == null) {
+      await prefs.remove(_providerKey);
+    } else {
+      await prefs.setString(_providerKey, provider.name);
+    }
   }
 
   Future<String?> getApiKey(AiProvider provider) async {

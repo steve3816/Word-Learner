@@ -278,9 +278,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+        child: Column(
           children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
             TextFormField(
               controller: _englishCtrl,
               decoration: const InputDecoration(
@@ -362,14 +365,23 @@ class _AddWordScreenState extends State<AddWordScreen> {
               const SizedBox(height: 8),
               _buildExampleEntry(i),
             ],
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _save,
-              child: Text(widget.word == null ? '新增' : '儲存'),
-            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _save,
+            child: Text(widget.word == null ? '新增' : '儲存'),
+          ),
+        ),
+      ),
+    ],
+  ),
+),
     );
   }
 }
