@@ -1,0 +1,7 @@
+{
+  "defaultPrompts": {
+    "chinese": "The English word is \"{word}\". Provide a concise Chinese definition Return only the Chinese definition, nothing else.",
+    "explanation": "Provide a concise English definition for the word \"{word}\" suitable for learners in one sentence. Return only the definition, nothing else.",
+    "example": "Write one simple, natural English example sentence using the word \"{word}\"."
+  }
+}

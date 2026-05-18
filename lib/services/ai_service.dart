@@ -11,9 +11,19 @@ extension AiProviderLabel on AiProvider {
         return 'Claude';
     }
   }
+
+  String get modelName {
+    switch (this) {
+      case AiProvider.deepseek:
+        return 'deepseek-v4-flash';
+      case AiProvider.openai:
+        return 'gpt-4o-mini';
+      case AiProvider.claude:
+        return 'claude-haiku';
+    }
+  }
 }
 
 abstract class AiService {
-  Future<String> generateChinese(String englishWord);
-  Future<String> generateExample(String englishWord);
+  Future<String> complete(String prompt);
 }

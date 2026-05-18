@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/word.dart';
@@ -18,16 +19,39 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, _) => db.execute('''
         CREATE TABLE words(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           english TEXT NOT NULL,
           chinese TEXT NOT NULL,
-          example_sentence TEXT,
+          english_explanation TEXT,
+          examples_json TEXT,
           created_at INTEGER NOT NULL
         )
       '''),
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE words ADD COLUMN english_explanation TEXT');
+          await db.execute('ALTER TABLE words ADD COLUMN examples_json TEXT');
+          // Migrate old example_sentence data into examples_json format
+          final rows = await db.query('words', columns: ['id', 'example_sentence']);
+          for (final row in rows) {
+            final old = row['example_sentence'] as String?;
+            if (old != null && old.isNotEmpty) {
+              final json = jsonEncode([
+                {'sentence': old, 'chineseTranslation': null}
+              ]);
+              await db.update(
+                'words',
+                {'examples_json': json},
+                where: 'id = ?',
+                whereArgs: [row['id']],
+              );
+            }
+          }
+        }
+      },
     );
   }
 

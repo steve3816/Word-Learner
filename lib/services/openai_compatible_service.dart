@@ -14,16 +14,7 @@ class OpenAiCompatibleService implements AiService {
   });
 
   @override
-  Future<String> generateChinese(String englishWord) => _call(
-        'The English word is "$englishWord". Provide a concise Chinese definition in 1-5 Chinese characters. Return only the Chinese definition, nothing else.',
-      );
-
-  @override
-  Future<String> generateExample(String englishWord) => _call(
-        'Write one simple, natural English example sentence using the word "$englishWord". Return only the sentence, nothing else.',
-      );
-
-  Future<String> _call(String prompt) async {
+  Future<String> complete(String prompt) async {
     final response = await http.post(
       Uri.parse('$baseUrl/v1/chat/completions'),
       headers: {
@@ -35,7 +26,7 @@ class OpenAiCompatibleService implements AiService {
         'messages': [
           {'role': 'user', 'content': prompt}
         ],
-        'max_tokens': 100,
+        'max_tokens': 200,
       }),
     );
     if (response.statusCode != 200) {

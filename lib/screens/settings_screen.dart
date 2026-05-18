@@ -11,8 +11,9 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _settings = SettingsService();
-  final _controllers = <AiProvider, TextEditingController>{};
+  final _keyControllers = <AiProvider, TextEditingController>{};
   final _obscured = <AiProvider, bool>{};
+  final _promptControllers = <String, TextEditingController>{};
   AiProvider? _selectedProvider;
   bool _loading = true;
 
@@ -20,15 +21,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     for (final p in AiProvider.values) {
-      _controllers[p] = TextEditingController();
+      _keyControllers[p] = TextEditingController();
       _obscured[p] = true;
+    }
+    for (final field in SettingsService.promptFields) {
+      _promptControllers[field] = TextEditingController();
     }
     _loadSettings();
   }
 
   @override
   void dispose() {
-    for (final c in _controllers.values) {
+    for (final c in _keyControllers.values) {
+      c.dispose();
+    }
+    for (final c in _promptControllers.values) {
       c.dispose();
     }
     super.dispose();
@@ -38,7 +45,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final provider = await _settings.getSelectedProvider();
     for (final p in AiProvider.values) {
       final key = await _settings.getApiKey(p);
-      _controllers[p]!.text = key ?? '';
+      _keyControllers[p]!.text = key ?? '';
+    }
+    for (final field in SettingsService.promptFields) {
+      _promptControllers[field]!.text = await _settings.getPrompt(field);
     }
     setState(() {
       _selectedProvider = provider;
@@ -48,16 +58,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _save() async {
     for (final p in AiProvider.values) {
-      await _settings.setApiKey(p, _controllers[p]!.text.trim());
+      await _settings.setApiKey(p, _keyControllers[p]!.text.trim());
     }
     if (_selectedProvider != null) {
       await _settings.setSelectedProvider(_selectedProvider!);
+    }
+    for (final field in SettingsService.promptFields) {
+      final text = _promptControllers[field]!.text.trim();
+      await _settings.setPrompt(
+        field,
+        text.isEmpty ? await SettingsService.defaultPromptFor(field) : text,
+      );
     }
     if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('設定已儲存')));
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _resetPrompt(String field) async {
+    final def = await SettingsService.defaultPromptFor(field);
+    if (mounted) setState(() => _promptControllers[field]!.text = def);
   }
 
   @override
@@ -80,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: AiProvider.values
                   .map((p) => RadioListTile<AiProvider>(
-                        title: Text(p.displayName),
+                        title: Text('${p.displayName} (${p.modelName})'),
                         value: p,
                       ))
                   .toList(),
@@ -96,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             (p) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: TextField(
-                controller: _controllers[p],
+                controller: _keyControllers[p],
                 obscureText: _obscured[p]!,
                 decoration: InputDecoration(
                   labelText: '${p.displayName} API Key',
@@ -112,6 +134,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          const Divider(height: 32),
+          ExpansionTile(
+            title: const Text(
+              'AI 提示詞設定',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text('用 {word} 代表輸入的英文單字'),
+            tilePadding: EdgeInsets.zero,
+            children: SettingsService.promptFields.map((field) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          SettingsService.promptLabel(field),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => _resetPrompt(field),
+                          child: const Text('還原預設'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: _promptControllers[field],
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 4,
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
           ElevatedButton(onPressed: _save, child: const Text('儲存')),
         ],
       ),

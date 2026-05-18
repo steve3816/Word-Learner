@@ -80,10 +80,6 @@ class _WordListScreenState extends State<WordListScreen> {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(word.chinese),
-                          trailing: word.exampleSentence != null
-                              ? const Icon(Icons.format_quote,
-                                  size: 16, color: Colors.grey)
-                              : null,
                           onTap: () async {
                             await Navigator.push(
                               context,

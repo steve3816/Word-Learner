@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ai_service.dart';
 import 'openai_compatible_service.dart';
@@ -6,6 +8,51 @@ import 'claude_service.dart';
 class SettingsService {
   static const _providerKey = 'selected_provider';
   static const _keyPrefix = 'api_key_';
+  static const _promptPrefix = 'prompt_';
+
+  static const promptFields = ['chinese', 'explanation', 'example'];
+
+  // Cached default prompts loaded from assets/config.json
+  static Map<String, String>? _defaultPrompts;
+
+  static Future<Map<String, String>> _loadDefaultPrompts() async {
+    if (_defaultPrompts != null) return _defaultPrompts!;
+    final raw = await rootBundle.loadString('assets/config.json');
+    final map = jsonDecode(raw) as Map<String, dynamic>;
+    _defaultPrompts = Map<String, String>.from(
+      map['defaultPrompts'] as Map<String, dynamic>,
+    );
+    return _defaultPrompts!;
+  }
+
+  static Future<String> defaultPromptFor(String field) async {
+    final prompts = await _loadDefaultPrompts();
+    return prompts[field] ?? '';
+  }
+
+  static String promptLabel(String field) {
+    switch (field) {
+      case 'chinese':
+        return '中文意思';
+      case 'explanation':
+        return '英文解釋';
+      case 'example':
+        return '例句＋中文翻譯';
+      default:
+        return field;
+    }
+  }
+
+  Future<String> getPrompt(String field) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('$_promptPrefix$field') ??
+        await defaultPromptFor(field);
+  }
+
+  Future<void> setPrompt(String field, String prompt) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_promptPrefix$field', prompt);
+  }
 
   Future<AiProvider?> getSelectedProvider() async {
     final prefs = await SharedPreferences.getInstance();
@@ -43,7 +90,7 @@ class SettingsService {
         return OpenAiCompatibleService(
           apiKey: key,
           baseUrl: 'https://api.deepseek.com',
-          model: 'deepseek-chat',
+          model: 'deepseek-v4-flash',
         );
       case AiProvider.openai:
         return OpenAiCompatibleService(
