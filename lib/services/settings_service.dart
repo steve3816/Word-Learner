@@ -105,6 +105,12 @@ class SettingsService {
         );
       case AiProvider.claude:
         return ClaudeService(apiKey: key);
+      case AiProvider.gemini:
+        return OpenAiCompatibleService(
+          apiKey: key,
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          model: 'gemini-3.5-flash',
+        );
     }
   }
 

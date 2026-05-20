@@ -1,4 +1,4 @@
-enum AiProvider { deepseek, openai, claude }
+enum AiProvider { deepseek, openai, claude, gemini }
 
 extension AiProviderLabel on AiProvider {
   String get displayName {
@@ -9,6 +9,8 @@ extension AiProviderLabel on AiProvider {
         return 'OpenAI';
       case AiProvider.claude:
         return 'Claude';
+      case AiProvider.gemini:
+        return 'Gemini';
     }
   }
 
@@ -20,6 +22,8 @@ extension AiProviderLabel on AiProvider {
         return 'gpt-4o-mini';
       case AiProvider.claude:
         return 'claude-haiku';
+      case AiProvider.gemini:
+        return 'gemini-3.5-flash';
     }
   }
 }
