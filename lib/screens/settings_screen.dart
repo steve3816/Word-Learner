@@ -59,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _save() async {
     final missingWord = SettingsService.promptFields.any(
-      (field) => !_promptControllers[field]!.text.contains('{word}'),
+      (field) => !_promptControllers[field]!.text.contains(SettingsService.wordPlaceholder),
     );
 
     if (missingWord && mounted) {
@@ -219,7 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ValueListenableBuilder<TextEditingValue>(
                                   valueListenable: _promptControllers[field]!,
                                   builder: (_, value, _) {
-                                    if (value.text.contains('{word}')) {
+                                    if (value.text.contains(SettingsService.wordPlaceholder)) {
                                       return const SizedBox.shrink();
                                     }
                                     return const Padding(

@@ -99,7 +99,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   String _buildPrompt(String field) {
     final base =
-        (_prompts[field] ?? '').replaceAll('{word}', _englishCtrl.text.trim());
+        (_prompts[field] ?? '').replaceAll(SettingsService.wordPlaceholder, _englishCtrl.text.trim());
     return field == 'example' ? '$base$_exampleFormatSuffix' : base;
   }
 

@@ -11,6 +11,7 @@ class SettingsService {
   static const _promptPrefix = 'prompt_';
 
   static const promptFields = ['chinese', 'explanation', 'example'];
+  static const wordPlaceholder = '{word}';
 
   // Cached default prompts loaded from assets/config.json
   static Map<String, String>? _defaultPrompts;
