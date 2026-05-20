@@ -58,6 +58,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
+    final missingWord = SettingsService.promptFields.any(
+      (field) => !_promptControllers[field]!.text.contains('{word}'),
+    );
+
+    if (missingWord && mounted) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('確認儲存'),
+          content: const Text(
+            '有提示詞未包含 {word}，傳給 AI 時將不會帶入目標單字。\n確定要儲存嗎？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('確認儲存'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
     for (final p in AiProvider.values) {
       await _settings.setApiKey(p, _keyControllers[p]!.text.trim());
     }
@@ -189,7 +216,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 4),
+                                  ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: _promptControllers[field]!,
+                                  builder: (_, value, _) {
+                                    if (value.text.contains('{word}')) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return const Padding(
+                                      padding: EdgeInsets.only(bottom: 4),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.warning_amber_rounded,
+                                              size: 14, color: Colors.red),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            '缺少目標單字標示！',
+                                            style: TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
                                 TextField(
                                   controller: _promptControllers[field],
                                   maxLines: 4,
