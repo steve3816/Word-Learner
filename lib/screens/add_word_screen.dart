@@ -111,8 +111,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       _chineseCtrl.text = result;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('AI 產生失敗：$e')));
+        showErrorSnackBar(context, 'AI 產生失敗：$e');
       }
     } finally {
       if (mounted) setState(() => _loadingChinese = false);
@@ -127,8 +126,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       _explanationCtrl.text = result;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('AI 產生失敗：$e')));
+        showErrorSnackBar(context, 'AI 產生失敗：$e');
       }
     } finally {
       if (mounted) setState(() => _loadingExplanation = false);
@@ -145,8 +143,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       _examples[index].translationCtrl.text = result.chineseTranslation ?? '';
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('AI 產生失敗：$e')));
+        showErrorSnackBar(context, 'AI 產生失敗：$e');
       }
     } finally {
       if (mounted) setState(() => _examples[index].loading = false);
@@ -195,8 +192,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('儲存失敗：$e')));
+        showErrorSnackBar(context, '儲存失敗：$e');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ── Color tokens (Soft Tech design system) ─────────────────────────────────
@@ -172,6 +173,39 @@ ThemeData buildAppTheme() {
       ),
     ),
   );
+}
+
+// ── SnackBar helpers ────────────────────────────────────────────────────────
+void showSuccessSnackBar(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Row(
+      children: [
+        SvgPicture.asset('assets/icons/emoji_success.svg',
+            width: 22, height: 22, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
+        const SizedBox(width: 10),
+        Expanded(child: Text(message,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
+      ],
+    ),
+    backgroundColor: const Color(0xFF4CAF50),
+    behavior: SnackBarBehavior.floating,
+  ));
+}
+
+void showErrorSnackBar(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Row(
+      children: [
+        SvgPicture.asset('assets/icons/emoji_error.svg',
+            width: 22, height: 22, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
+        const SizedBox(width: 10),
+        Expanded(child: Text(message,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
+      ],
+    ),
+    backgroundColor: const Color(0xFFE53935),
+    behavior: SnackBarBehavior.floating,
+  ));
 }
 
 // ── Dot grid background ─────────────────────────────────────────────────────

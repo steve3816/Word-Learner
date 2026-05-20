@@ -97,8 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('設定已儲存')));
+      showSuccessSnackBar(context, '設定已儲存');
       Navigator.pop(context);
     }
   }
