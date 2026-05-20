@@ -15,6 +15,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _keyControllers = <AiProvider, TextEditingController>{};
   final _obscured = <AiProvider, bool>{};
   final _promptControllers = <String, TextEditingController>{};
+  final _promptFocusNodes = <String, FocusNode>{};
+  String? _focusedPromptField;
   AiProvider? _selectedProvider;
   bool _loading = true;
 
@@ -27,6 +29,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     for (final field in SettingsService.promptFields) {
       _promptControllers[field] = TextEditingController();
+      final node = FocusNode();
+      node.addListener(() {
+        setState(() => _focusedPromptField = node.hasFocus ? field : null);
+      });
+      _promptFocusNodes[field] = node;
     }
     _loadSettings();
   }
@@ -38,6 +45,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     for (final c in _promptControllers.values) {
       c.dispose();
+    }
+    for (final n in _promptFocusNodes.values) {
+      n.dispose();
     }
     super.dispose();
   }
@@ -105,6 +115,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _resetPrompt(String field) async {
     final def = await SettingsService.defaultPromptFor(field);
     if (mounted) setState(() => _promptControllers[field]!.text = def);
+  }
+
+  void _insertWordPlaceholder(String field) {
+    final controller = _promptControllers[field]!;
+    final text = controller.text;
+    final pos = controller.selection.baseOffset;
+    final insert = pos < 0 ? text.length : pos;
+    controller.value = controller.value.copyWith(
+      text: text.substring(0, insert) + SettingsService.wordPlaceholder + text.substring(insert),
+      selection: TextSelection.collapsed(offset: insert + SettingsService.wordPlaceholder.length),
+    );
   }
 
   @override
@@ -209,6 +230,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           fontWeight: FontWeight.w500),
                                     ),
                                     const Spacer(),
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 150),
+                                      child: _focusedPromptField == field
+                                          ? TextButton(
+                                              key: const ValueKey('insert'),
+                                              onPressed: () => _insertWordPlaceholder(field),
+                                              child: const Text('插入 {word}'),
+                                            )
+                                          : const SizedBox.shrink(key: ValueKey('hidden')),
+                                    ),
                                     TextButton(
                                       onPressed: () => _resetPrompt(field),
                                       child: const Text('還原預設'),
@@ -241,6 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                                 TextField(
                                   controller: _promptControllers[field],
+                                  focusNode: _promptFocusNodes[field],
                                   maxLines: 4,
                                 ),
                               ],
