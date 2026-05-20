@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../services/ai_service.dart';
@@ -276,112 +277,106 @@ class _AddWordScreenState extends State<AddWordScreen> {
       appBar: AppBar(
         title: Text(widget.word == null ? '新增單字' : '編輯單字'),
       ),
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-            TextFormField(
-              controller: _englishCtrl,
-              decoration: const InputDecoration(
-                labelText: '英文單字 *',
-                border: OutlineInputBorder(),
+      body: DotGridBackground(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    TextFormField(
+                      controller: _englishCtrl,
+                      decoration: const InputDecoration(labelText: '英文單字 *'),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? '請輸入英文單字' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _chineseCtrl,
+                            decoration:
+                                const InputDecoration(labelText: '中文意思 *'),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? '請輸入中文意思'
+                                : null,
+                          ),
+                        ),
+                        if (_aiService != null) ...[
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _aiButton(
+                              loading: _loadingChinese,
+                              onPressed: _generateChinese,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _explanationCtrl,
+                            decoration: const InputDecoration(
+                                labelText: '英文解釋（選填）'),
+                            maxLines: 2,
+                          ),
+                        ),
+                        if (_aiService != null) ...[
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _aiButton(
+                              loading: _loadingExplanation,
+                              onPressed: _generateExplanation,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        const Text(
+                          '例句',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w500),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _addExample,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('新增例句'),
+                        ),
+                      ],
+                    ),
+                    for (int i = 0; i < _examples.length; i++) ...[
+                      const SizedBox(height: 8),
+                      _buildExampleEntry(i),
+                    ],
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? '請輸入英文單字' : null,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _chineseCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '中文意思 *',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? '請輸入中文意思' : null,
-                  ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: GradientButton(
+                  onPressed: _save,
+                  child: Text(widget.word == null ? '新增' : '儲存'),
                 ),
-                if (_aiService != null) ...[
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: _aiButton(
-                      loading: _loadingChinese,
-                      onPressed: _generateChinese,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _explanationCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '英文解釋（選填）',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
-                ),
-                if (_aiService != null) ...[
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: _aiButton(
-                      loading: _loadingExplanation,
-                      onPressed: _generateExplanation,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                const Text(
-                  '例句',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _addExample,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('新增例句'),
-                ),
-              ],
-            ),
-            for (int i = 0; i < _examples.length; i++) ...[
-              const SizedBox(height: 8),
-              _buildExampleEntry(i),
+              ),
             ],
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _save,
-            child: Text(widget.word == null ? '新增' : '儲存'),
           ),
         ),
       ),
-    ],
-  ),
-),
     );
   }
 }

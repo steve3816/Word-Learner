@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 
@@ -147,7 +148,9 @@ class _QuizScreenState extends State<QuizScreen> {
     if (_questions.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('複習')),
-        body: const Center(child: Text('單字不足，請先新增更多單字。')),
+        body: const DotGridBackground(
+          child: Center(child: Text('單字不足，請先新增更多單字。')),
+        ),
       );
     }
 
@@ -160,72 +163,76 @@ class _QuizScreenState extends State<QuizScreen> {
       appBar: AppBar(
         title: Text('複習 ${_current + 1} / ${_questions.length}'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              _questionLabel(question.type),
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  question.prompt,
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+      body: DotGridBackground(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _questionLabel(question.type),
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    question.prompt,
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _answerCtrl,
-              enabled: !_answered,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: '你的答案',
-                border: const OutlineInputBorder(),
-                filled: _answered,
-                fillColor: _answered
-                    ? (_isCorrect ? Colors.green.shade50 : Colors.red.shade50)
-                    : null,
+              const SizedBox(height: 24),
+              TextField(
+                controller: _answerCtrl,
+                enabled: !_answered,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: '你的答案',
+                  filled: _answered,
+                  fillColor: _answered
+                      ? (_isCorrect
+                          ? AppColors.mintSoft
+                          : AppColors.pinkSoft)
+                      : null,
+                ),
+                onSubmitted: _answered ? null : (_) => _submit(),
               ),
-              onSubmitted: _answered ? null : (_) => _submit(),
-            ),
-            if (_answered) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    _isCorrect ? Icons.check_circle : Icons.cancel,
-                    color: _isCorrect ? Colors.green : Colors.red,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isCorrect ? '正確！' : '正確答案：${question.answer}',
-                    style: TextStyle(
-                      color: _isCorrect ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
+              if (_answered) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      _isCorrect ? Icons.check_circle : Icons.cancel,
+                      color: _isCorrect ? AppColors.mint : AppColors.pinkDark,
                     ),
-                  ),
-                ],
-              ),
-            ],
-            const Spacer(),
-            if (!_answered)
-              ElevatedButton(onPressed: _submit, child: const Text('送出'))
-            else
-              ElevatedButton(
-                onPressed: _next,
-                child: Text(
-                  _current + 1 >= _questions.length ? '查看結果' : '下一題',
+                    const SizedBox(width: 8),
+                    Text(
+                      _isCorrect ? '正確！' : '正確答案：${question.answer}',
+                      style: TextStyle(
+                        color:
+                            _isCorrect ? AppColors.mint : AppColors.pinkDark,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-          ],
+              ],
+              const Spacer(),
+              if (!_answered)
+                GradientButton(onPressed: _submit, child: const Text('送出'))
+              else
+                GradientButton(
+                  onPressed: _next,
+                  child: Text(
+                    _current + 1 >= _questions.length ? '查看結果' : '下一題',
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -236,30 +243,36 @@ class _QuizScreenState extends State<QuizScreen> {
     final percent = _correct / total;
     return Scaffold(
       appBar: AppBar(title: const Text('複習結果')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '$_correct / $total',
-              style: const TextStyle(
-                  fontSize: 64, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              percent >= 0.8
-                  ? '太棒了！'
-                  : percent >= 0.6
-                      ? '不錯！繼續加油'
-                      : '再多複習幾次吧',
-              style: const TextStyle(fontSize: 20, color: Colors.grey),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('回到單字本'),
-            ),
-          ],
+      body: DotGridBackground(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '$_correct / $total',
+                style: const TextStyle(
+                    fontSize: 64, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                percent >= 0.8
+                    ? '太棒了！'
+                    : percent >= 0.6
+                        ? '不錯！繼續加油'
+                        : '再多複習幾次吧',
+                style: const TextStyle(fontSize: 20, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              GradientButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('回到單字本'),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 import 'add_word_screen.dart';
@@ -59,47 +60,43 @@ class _WordListScreenState extends State<WordListScreen> {
           ),
         ],
       ),
-      body: _words.isEmpty
-          ? const Center(
-              child: Text(
-                '還沒有單字，點 + 新增吧！',
-                style: TextStyle(color: Colors.grey),
-              ),
-            )
-          : ListView.builder(
-              itemCount: _words.length,
-              itemBuilder: (context, index) {
-                final word = _words[index];
-                return Dismissible(
-                  key: Key('word_${word.id}'),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 16),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  onDismissed: (_) => _deleteWord(word.id!),
-                  child: ListTile(
-                    title: Text(
-                      word.english,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+      body: DotGridBackground(
+        child: _words.isEmpty
+            ? const Center(
+                child: Text('還沒有單字，點 + 新增吧！'),
+              )
+            : ListView.builder(
+                itemCount: _words.length,
+                itemBuilder: (context, index) {
+                  final word = _words[index];
+                  return Dismissible(
+                    key: Key('word_${word.id}'),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      color: AppColors.pinkDark,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 16),
+                      child: const Icon(Icons.delete, color: Colors.white),
                     ),
-                    subtitle: Text(word.chinese),
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AddWordScreen(word: word),
-                        ),
-                      );
-                      await _loadWords();
-                    },
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
+                    onDismissed: (_) => _deleteWord(word.id!),
+                    child: ListTile(
+                      title: Text(word.english),
+                      subtitle: Text(word.chinese),
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddWordScreen(word: word),
+                          ),
+                        );
+                        await _loadWords();
+                      },
+                    ),
+                  );
+                },
+              ),
+      ),
+      floatingActionButton: GradientFAB(
         onPressed: () async {
           await Navigator.push(
             context,
