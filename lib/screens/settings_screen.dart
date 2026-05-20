@@ -144,7 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   ExpansionTile(
                     title: const Text(
-                      '選擇 AI 提供者',
+                      'AI 提供者',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
