@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+/prototypes
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
