@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
+import '../models/example_sentence.dart';
 import '../models/word.dart';
 import '../services/ai_service.dart';
 import '../services/settings_service.dart';

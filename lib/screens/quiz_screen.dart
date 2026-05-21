@@ -64,10 +64,11 @@ class _QuizScreenState extends State<QuizScreen> {
     final questions = <_Question>[];
     for (final word in shuffled.take(10)) {
       final available = [_QuizType.enToCn, _QuizType.cnToEn];
-      if (word.exampleSentence != null &&
+      var hasExampleSentence = word.exampleSentence != null &&
           word.exampleSentence!
               .toLowerCase()
-              .contains(word.english.toLowerCase())) {
+              .contains(word.english.toLowerCase());
+      if (hasExampleSentence) {
         available.add(_QuizType.fillInBlank);
       }
       questions.add(_buildQuestion(word, available[_random.nextInt(available.length)]));
