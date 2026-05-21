@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
+import '../utils/list_util.dart';
 
 enum _QuizType { enToCn, cnToEn, fillInBlank }
 
@@ -60,20 +61,24 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   List<_Question> _generateQuestions(List<Word> words) {
-    final shuffled = List<Word>.from(words)..shuffle(_random);
-    final questions = <_Question>[];
-    for (final word in shuffled.take(10)) {
-      final available = [_QuizType.enToCn, _QuizType.cnToEn];
-      var hasExampleSentence = word.exampleSentence != null &&
-          word.exampleSentence!
-              .toLowerCase()
-              .contains(word.english.toLowerCase());
-      if (hasExampleSentence) {
-        available.add(_QuizType.fillInBlank);
-      }
-      questions.add(_buildQuestion(word, available[_random.nextInt(available.length)]));
-    }
-    return questions;
+    // 從單字列表中隨機選擇10個，並為每個單字隨機生成一種題型
+    return (List<Word>.from(words)..shuffle(_random))
+        .take(10)
+        .map((word) {
+
+          bool hasExample = word.exampleSentence != null &&
+              word.exampleSentence!
+                  .toLowerCase()
+                  .contains(word.english.toLowerCase());
+
+          final availableQuizType = [_QuizType.enToCn, _QuizType.cnToEn,
+            if (hasExample)
+              _QuizType.fillInBlank,
+          ];
+          
+          return _buildQuestion(word, ListUtil.getRandomElement(availableQuizType, _random));
+        })
+        .toList();
   }
 
   _Question _buildQuestion(Word word, _QuizType type) {
