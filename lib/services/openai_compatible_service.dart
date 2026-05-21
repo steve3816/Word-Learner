@@ -28,7 +28,7 @@ class OpenAiCompatibleService implements AiService {
           {'role': 'user', 'content': prompt}
         ],
       }),
-    );
+    ).timeout(const Duration(seconds: 10));
     debugPrint('[AI] $model ${response.statusCode}: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('HTTP ${response.statusCode}');

@@ -19,12 +19,12 @@ class ClaudeService implements AiService {
       },
       body: jsonEncode({
         'model': 'claude-haiku-4-5-20251001',
-        'max_tokens': 200,
+        'max_tokens': 1024,
         'messages': [
           {'role': 'user', 'content': prompt}
         ],
       }),
-    );
+    ).timeout(const Duration(seconds: 10));
     debugPrint('[AI] claude ${response.statusCode}: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('HTTP ${response.statusCode}');

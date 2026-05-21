@@ -28,7 +28,7 @@ class GeminiService implements AiService {
           }
         ],
       }),
-    );
+    ).timeout(const Duration(seconds: 10));
     debugPrint('[AI] $_model ${response.statusCode}: ${response.body}');
     if (response.statusCode != 200) {
       final message = _extractErrorMessage(response.body);
