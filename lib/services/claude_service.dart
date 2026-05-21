@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'ai_service.dart';
 
@@ -24,6 +25,7 @@ class ClaudeService implements AiService {
         ],
       }),
     );
+    debugPrint('[AI] claude ${response.statusCode}: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('HTTP ${response.statusCode}');
     }

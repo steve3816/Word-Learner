@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'ai_service.dart';
 
@@ -26,9 +27,9 @@ class OpenAiCompatibleService implements AiService {
         'messages': [
           {'role': 'user', 'content': prompt}
         ],
-        'max_tokens': 200,
       }),
     );
+    debugPrint('[AI] $model ${response.statusCode}: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('HTTP ${response.statusCode}');
     }

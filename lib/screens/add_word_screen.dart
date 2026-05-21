@@ -103,6 +103,25 @@ class _AddWordScreenState extends State<AddWordScreen> {
     return field == 'example' ? '$base$_exampleFormatSuffix' : base;
   }
 
+  void _showAiError(Object e) {
+    final message = e is Exception
+        ? e.toString().replaceFirst('Exception: ', '')
+        : e.toString();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('AI 回應失敗'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('關閉'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _generateChinese() async {
     if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
     setState(() => _loadingChinese = true);
@@ -110,9 +129,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       final result = await _aiService!.complete(_buildPrompt('chinese'));
       _chineseCtrl.text = result;
     } catch (e) {
-      if (mounted) {
-        showErrorSnackBar(context, 'AI 產生失敗：$e');
-      }
+      if (mounted) _showAiError(e);
     } finally {
       if (mounted) setState(() => _loadingChinese = false);
     }
@@ -125,9 +142,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       final result = await _aiService!.complete(_buildPrompt('explanation'));
       _explanationCtrl.text = result;
     } catch (e) {
-      if (mounted) {
-        showErrorSnackBar(context, 'AI 產生失敗：$e');
-      }
+      if (mounted) _showAiError(e);
     } finally {
       if (mounted) setState(() => _loadingExplanation = false);
     }
@@ -142,9 +157,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       _examples[index].sentenceCtrl.text = result.sentence;
       _examples[index].translationCtrl.text = result.chineseTranslation ?? '';
     } catch (e) {
-      if (mounted) {
-        showErrorSnackBar(context, 'AI 產生失敗：$e');
-      }
+      if (mounted) _showAiError(e);
     } finally {
       if (mounted) setState(() => _examples[index].loading = false);
     }
