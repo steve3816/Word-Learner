@@ -5,7 +5,12 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../utils/list_util.dart';
 
-enum _QuizType { enToCn, cnToEn, fillInBlank }
+// 複習題目類型
+enum _QuizType { 
+  enToCn, // 英文提示，填中文
+  cnToEn, // 中文提示，填英文
+  fillInBlank // 例句提示，填英文
+  }
 
 class _Question {
   final Word word;
@@ -67,15 +72,15 @@ class _QuizScreenState extends State<QuizScreen> {
         .map((word) {
 
           bool hasExample = word.exampleSentence != null &&
-              word.exampleSentence!
-                  .toLowerCase()
+                word.exampleSentence!
+                    .toLowerCase()
                   .contains(word.english.toLowerCase());
 
           final availableQuizType = [_QuizType.enToCn, _QuizType.cnToEn,
             if (hasExample)
               _QuizType.fillInBlank,
           ];
-          
+
           return _buildQuestion(word, ListUtil.getRandomElement(availableQuizType, _random));
         })
         .toList();
@@ -98,16 +103,19 @@ class _QuizScreenState extends State<QuizScreen> {
           answer: word.english,
         );
       case _QuizType.fillInBlank:
-        final blanked = word.exampleSentence!.replaceAll(
+        final exampleSentence = ListUtil.getRandomElement(word.examples, _random);
+        final blankedExamepleSentence = exampleSentence.sentence.replaceAll(
           RegExp(RegExp.escape(word.english), caseSensitive: false),
           '___',
         );
+        final translation = exampleSentence.chineseTranslation;
         return _Question(
           word: word,
           type: type,
-          prompt: '${word.chinese}\n\n$blanked',
+          prompt: translation != null ? '$translation\n\n$blankedExamepleSentence' : blankedExamepleSentence,
           answer: word.english,
         );
+
     }
   }
 
