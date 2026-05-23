@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
-import 'screens/word_list_screen.dart';
+import 'screens/word_book_list_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '單字本',
       theme: buildAppTheme(),
-      home: const WordListScreen(),
+      home: const WordBookListScreen(),
     );
   }
 }

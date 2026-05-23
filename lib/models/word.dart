@@ -8,6 +8,7 @@ class Word {
   final String? englishExplanation;
   final List<ExampleSentence> examples;
   final DateTime createdAt;
+  final int wordBookId;
 
   const Word({
     this.id,
@@ -16,6 +17,7 @@ class Word {
     this.englishExplanation,
     this.examples = const [],
     required this.createdAt,
+    required this.wordBookId,
   });
 
   // For quiz screen compatibility
@@ -30,6 +32,7 @@ class Word {
             ? null
             : jsonEncode(examples.map((e) => e.toMap()).toList()),
         'created_at': createdAt.millisecondsSinceEpoch,
+        'word_book_id': wordBookId,
       };
 
   factory Word.fromMap(Map<String, dynamic> map) {
@@ -54,6 +57,7 @@ class Word {
       englishExplanation: map['english_explanation'] as String?,
       examples: examples,
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
+      wordBookId: map['word_book_id'] as int? ?? 1,
     );
   }
 
@@ -63,6 +67,7 @@ class Word {
     String? chinese,
     String? englishExplanation,
     List<ExampleSentence>? examples,
+    int? wordBookId,
   }) =>
       Word(
         id: id ?? this.id,
@@ -71,5 +76,6 @@ class Word {
         englishExplanation: englishExplanation ?? this.englishExplanation,
         examples: examples ?? this.examples,
         createdAt: createdAt,
+        wordBookId: wordBookId ?? this.wordBookId,
       );
 }

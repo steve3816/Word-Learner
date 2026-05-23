@@ -32,8 +32,9 @@ class _ExampleEntry {
 
 class AddWordScreen extends StatefulWidget {
   final Word? word;
+  final int? wordBookId;
 
-  const AddWordScreen({super.key, this.word});
+  const AddWordScreen({super.key, this.word, this.wordBookId});
 
   @override
   State<AddWordScreen> createState() => _AddWordScreenState();
@@ -196,6 +197,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
           : _explanationCtrl.text.trim(),
       examples: examples,
       createdAt: widget.word?.createdAt ?? DateTime.now(),
+      wordBookId: widget.word?.wordBookId ?? widget.wordBookId!,
     );
     try {
       if (widget.word == null) {

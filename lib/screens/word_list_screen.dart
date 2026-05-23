@@ -3,12 +3,14 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
+import '../models/word_book.dart';
 import 'add_word_screen.dart';
 import 'quiz_screen.dart';
-import 'settings_screen.dart';
 
 class WordListScreen extends StatefulWidget {
-  const WordListScreen({super.key});
+  final WordBook wordBook;
+
+  const WordListScreen({super.key, required this.wordBook});
 
   @override
   State<WordListScreen> createState() => _WordListScreenState();
@@ -25,8 +27,13 @@ class _WordListScreenState extends State<WordListScreen> {
   }
 
   Future<void> _loadWords() async {
-    final words = await _db.getAllWords();
+    final words = await _db.getWordsByWordBook(widget.wordBook.id!);
     setState(() => _words = words);
+  }
+
+  Future<void> _deleteWord(int id) async {
+    await _db.deleteWord(id);
+    await _loadWords();
   }
 
   String _formatCreatedAt(DateTime createdAt) {
@@ -43,43 +50,28 @@ class _WordListScreenState extends State<WordListScreen> {
     }
   }
 
-  Future<void> _deleteWord(int id) async {
-    await _db.deleteWord(id);
-    await _loadWords();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('我的單字本'),
+        title: Text(widget.wordBook.name),
         actions: [
           if (_words.length >= 3)
             IconButton(
               icon: const Icon(Icons.quiz),
-              tooltip: '開始複習',
+              tooltip: '複習此單字書',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const QuizScreen()),
+                MaterialPageRoute(
+                  builder: (_) => QuizScreen(wordBookId: widget.wordBook.id),
+                ),
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
-              await _loadWords();
-            },
-          ),
         ],
       ),
       body: DotGridBackground(
         child: _words.isEmpty
-            ? const Center(
-                child: Text('還沒有單字，點 + 新增吧！'),
-              )
+            ? const Center(child: Text('還沒有單字，點 + 新增吧！'))
             : ListView.builder(
                 itemCount: _words.length,
                 itemBuilder: (context, index) {
@@ -105,7 +97,7 @@ class _WordListScreenState extends State<WordListScreen> {
                         _formatCreatedAt(word.createdAt),
                         style: const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                        onTap: () async {
+                      onTap: () async {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -123,7 +115,9 @@ class _WordListScreenState extends State<WordListScreen> {
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddWordScreen()),
+            MaterialPageRoute(
+              builder: (_) => AddWordScreen(wordBookId: widget.wordBook.id!),
+            ),
           );
           await _loadWords();
         },

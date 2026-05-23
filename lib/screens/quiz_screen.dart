@@ -28,7 +28,9 @@ class _Question {
 }
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key});
+  final int? wordBookId;
+
+  const QuizScreen({super.key, this.wordBookId});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -59,7 +61,9 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<void> _loadQuestions() async {
-    final words = await _db.getRecentWords(20);
+    final words = widget.wordBookId != null
+        ? await _db.getWordsByWordBook(widget.wordBookId!)
+        : await _db.getAllWords();
     setState(() {
       _questions = _generateQuestions(words);
       _loading = false;
