@@ -6,11 +6,12 @@ import '../models/word.dart';
 import '../utils/list_util.dart';
 
 // 複習題目類型
-enum _QuizType { 
+enum _QuizType {
   enToCn, // 英文提示，填中文
   cnToEn, // 中文提示，填英文
-  fillInBlank // 例句提示，填英文
-  }
+  fillInBlank, // 例句提示，填英文
+  enDefinition, // 英文解釋提示，填英文
+}
 
 class _Question {
   final Word word;
@@ -76,9 +77,11 @@ class _QuizScreenState extends State<QuizScreen> {
                     .toLowerCase()
                   .contains(word.english.toLowerCase());
 
-          final availableQuizType = [_QuizType.enToCn, _QuizType.cnToEn,
-            if (hasExample)
-              _QuizType.fillInBlank,
+          final availableQuizType = [
+            _QuizType.enToCn,
+            _QuizType.cnToEn,
+            if (hasExample) _QuizType.fillInBlank,
+            if (word.englishExplanation != null) _QuizType.enDefinition,
           ];
 
           return _buildQuestion(word, ListUtil.getRandomElement(availableQuizType, _random));
@@ -100,6 +103,13 @@ class _QuizScreenState extends State<QuizScreen> {
           word: word,
           type: type,
           prompt: word.chinese,
+          answer: word.english,
+        );
+      case _QuizType.enDefinition:
+        return _Question(
+          word: word,
+          type: type,
+          prompt: word.englishExplanation!,
           answer: word.english,
         );
       case _QuizType.fillInBlank:
@@ -148,6 +158,8 @@ class _QuizScreenState extends State<QuizScreen> {
         return '請輸入中文意思：';
       case _QuizType.cnToEn:
         return '請輸入英文單字：';
+      case _QuizType.enDefinition:
+        return '根據英文解釋，填入對應的英文單字：';
       case _QuizType.fillInBlank:
         return '請填入缺少的英文單字：';
     }
