@@ -1,9 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../utils/list_util.dart';
+import '../utils/proficiency_util.dart';
 
 // 複習題目類型
 enum _QuizType {
@@ -47,6 +49,8 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _answered = false;
   bool _isCorrect = false;
   bool _loading = true;
+  int? _pendingProficiency;
+  bool _showProficiencyOverride = false;
 
   @override
   void initState() {
@@ -134,23 +138,32 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _submit() {
+    final word = _questions[_current].word;
     final correct = _answerCtrl.text.trim().toLowerCase() ==
         _questions[_current].answer.toLowerCase();
     setState(() {
       _answered = true;
       _isCorrect = correct;
       if (correct) _correct++;
+      _pendingProficiency = (word.proficiency + (correct ? 10 : -10)).clamp(0, 100);
     });
   }
 
   void _next() {
+    _db.updateWord(_questions[_current].word.copyWith(proficiency: _pendingProficiency!));
     if (_current + 1 >= _questions.length) {
-      setState(() => _current = _questions.length);
+      setState(() {
+        _current = _questions.length;
+        _pendingProficiency = null;
+        _showProficiencyOverride = false;
+      });
     } else {
       setState(() {
         _current++;
         _answered = false;
         _isCorrect = false;
+        _pendingProficiency = null;
+        _showProficiencyOverride = false;
         _answerCtrl.clear();
       });
     }
@@ -218,16 +231,15 @@ class _QuizScreenState extends State<QuizScreen> {
               const SizedBox(height: 24),
               TextField(
                 controller: _answerCtrl,
-                enabled: !_answered,
+                readOnly: _answered,
                 autofocus: true,
+                style: _answered
+                    ? TextStyle(color: Colors.grey.shade500)
+                    : null,
                 decoration: InputDecoration(
                   labelText: '你的答案',
                   filled: _answered,
-                  fillColor: _answered
-                      ? (_isCorrect
-                          ? AppColors.mintSoft
-                          : AppColors.pinkSoft)
-                      : null,
+                  fillColor: _answered ? Colors.grey.shade100 : null,
                 ),
                 onSubmitted: _answered ? null : (_) => _submit(),
               ),
@@ -237,19 +249,80 @@ class _QuizScreenState extends State<QuizScreen> {
                   children: [
                     Icon(
                       _isCorrect ? Icons.check_circle : Icons.cancel,
-                      color: _isCorrect ? AppColors.mint : AppColors.pinkDark,
+                      color: _isCorrect ? Colors.green : Colors.red,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      _isCorrect ? '正確！' : '正確答案：${question.answer}',
-                      style: TextStyle(
-                        color:
-                            _isCorrect ? AppColors.mint : AppColors.pinkDark,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        _isCorrect ? '正確！' : '正確答案：${question.answer}',
+                        style: TextStyle(
+                          color: _isCorrect ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(
+                        () => _showProficiencyOverride = !_showProficiencyOverride,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('熟練度：', style: TextStyle(fontSize: 13)),
+                          Icon(
+                            _isCorrect ? Icons.arrow_upward : Icons.arrow_downward,
+                            size: 16,
+                            color: _isCorrect ? const Color.fromARGB(255, 1, 147, 11) : const Color.fromARGB(255, 255, 0, 0),
+                          ),
+                          const SizedBox(width: 4),
+                          proficiencyIcon(_pendingProficiency!, size: 24),
+                          const SizedBox(width: 2),
+                          Icon(
+                            _showProficiencyOverride
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                            size: 18,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+                if (_showProficiencyOverride) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: proficiencyLevels.map((level) {
+                      final isSelected = proficiencyToLevel(_pendingProficiency!) == level.$1;
+                      return GestureDetector(
+                        onTap: () => setState(() => _pendingProficiency = level.$1),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              SvgPicture.asset(
+                                proficiencyAsset(level.$1),
+                                width: 28,
+                                height: 28,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(level.$2, style: const TextStyle(fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ],
               const Spacer(),
               if (!_answered)

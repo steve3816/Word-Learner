@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/example_sentence.dart';
 import '../models/word.dart';
 import '../services/ai_service.dart';
 import '../services/settings_service.dart';
+import '../utils/proficiency_util.dart';
 
 // Appended to the user's example prompt to enforce JSON response format.
 // Not user-editable — required for parsing sentence + translation.
@@ -55,10 +57,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
   final Map<String, String> _prompts = {};
   bool _loadingChinese = false;
   bool _loadingExplanation = false;
+  late int _proficiency;
 
   @override
   void initState() {
     super.initState();
+    _proficiency = widget.word?.proficiency ?? 0;
     _englishCtrl = TextEditingController(text: widget.word?.english ?? '');
     _chineseCtrl = TextEditingController(text: widget.word?.chinese ?? '');
     _explanationCtrl =
@@ -198,6 +202,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       examples: examples,
       createdAt: widget.word?.createdAt ?? DateTime.now(),
       wordBookId: widget.word?.wordBookId ?? widget.wordBookId!,
+      proficiency: _proficiency,
     );
     try {
       if (widget.word == null) {
@@ -353,6 +358,48 @@ class _AddWordScreenState extends State<AddWordScreen> {
                           ),
                         ],
                       ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      '熟練度',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: proficiencyLevels.map((level) {
+                        final isSelected = _proficiency == level.$1;
+                        return GestureDetector(
+                          onTap: () => setState(() => _proficiency = level.$1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                SvgPicture.asset(
+                                  proficiencyAsset(level.$1),
+                                  width: 32,
+                                  height: 32,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  level.$2,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                     const SizedBox(height: 20),
                     Row(

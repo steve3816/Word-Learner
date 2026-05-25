@@ -3,6 +3,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word_book.dart';
+import '../utils/proficiency_util.dart';
 import 'quiz_screen.dart';
 import 'settings_screen.dart';
 import 'word_list_screen.dart';
@@ -16,7 +17,7 @@ class WordBookListScreen extends StatefulWidget {
 
 class _WordBookListScreenState extends State<WordBookListScreen> {
   final _db = DbHelper();
-  List<(WordBook, int)> _wordBooks = [];
+  List<(WordBook, int, int)> _wordBooks = [];
 
   @override
   void initState() {
@@ -122,7 +123,7 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: _wordBooks.length,
                 itemBuilder: (context, index) {
-                  final (book, count) = _wordBooks[index];
+                  final (book, count, avgProficiency) = _wordBooks[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Slidable(
@@ -151,6 +152,9 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text('$count 個單字'),
+                          trailing: count > 0
+                              ? proficiencyIcon(avgProficiency, size: 24)
+                              : null,
                           onTap: () async {
                             await Navigator.push(
                               context,

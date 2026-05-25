@@ -4,6 +4,7 @@ import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
+import '../utils/proficiency_util.dart';
 import 'add_word_screen.dart';
 import 'quiz_screen.dart';
 
@@ -93,9 +94,17 @@ class _WordListScreenState extends State<WordListScreen> {
                     child: ListTile(
                       title: Text(word.english),
                       subtitle: Text(word.chinese),
-                      trailing: Text(
-                        _formatCreatedAt(word.createdAt),
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _formatCreatedAt(word.createdAt),
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 8),
+                          proficiencyIcon(word.proficiency, size: 22),
+                        ],
                       ),
                       onTap: () async {
                         await Navigator.push(

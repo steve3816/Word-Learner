@@ -20,7 +20,7 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE word_books(
@@ -37,7 +37,8 @@ class DbHelper {
             english_explanation TEXT,
             examples_json TEXT,
             created_at INTEGER NOT NULL,
-            word_book_id INTEGER NOT NULL
+            word_book_id INTEGER NOT NULL,
+            proficiency INTEGER NOT NULL DEFAULT 0
           )
         ''');
       },
@@ -77,6 +78,11 @@ class DbHelper {
             'ALTER TABLE words ADD COLUMN word_book_id INTEGER DEFAULT 1',
           );
         }
+        if (oldVersion < 4) {
+          await db.execute(
+            'ALTER TABLE words ADD COLUMN proficiency INTEGER DEFAULT 0',
+          );
+        }
       },
     );
   }
@@ -98,10 +104,11 @@ class DbHelper {
     await db.delete('word_books', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<List<(WordBook, int)>> getAllWordBooksWithCount() async {
+  Future<List<(WordBook, int, int)>> getAllWordBooksWithCount() async {
     final db = await database;
     final rows = await db.rawQuery('''
-      SELECT wb.*, COUNT(w.id) as word_count
+      SELECT wb.*, COUNT(w.id) as word_count,
+             COALESCE(CAST(AVG(w.proficiency) AS INTEGER), 0) as avg_proficiency
       FROM word_books wb
       LEFT JOIN words w ON w.word_book_id = wb.id
       GROUP BY wb.id
@@ -110,7 +117,8 @@ class DbHelper {
     return rows.map((row) {
       final book = WordBook.fromMap(row);
       final count = row['word_count'] as int;
-      return (book, count);
+      final avgProficiency = row['avg_proficiency'] as int;
+      return (book, count, avgProficiency);
     }).toList();
   }
 
