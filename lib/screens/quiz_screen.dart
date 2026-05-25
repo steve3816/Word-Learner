@@ -252,41 +252,40 @@ class _QuizScreenState extends State<QuizScreen> {
                       color: _isCorrect ? Colors.green : Colors.red,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _isCorrect ? '正確！' : '正確答案：${question.answer}',
-                        style: TextStyle(
-                          color: _isCorrect ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => setState(
-                        () => _showProficiencyOverride = !_showProficiencyOverride,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('熟練度：', style: TextStyle(fontSize: 13)),
-                          Icon(
-                            _isCorrect ? Icons.arrow_upward : Icons.arrow_downward,
-                            size: 16,
-                            color: _isCorrect ? const Color.fromARGB(255, 1, 147, 11) : const Color.fromARGB(255, 255, 0, 0),
-                          ),
-                          const SizedBox(width: 4),
-                          proficiencyIcon(_pendingProficiency!, size: 24),
-                          const SizedBox(width: 2),
-                          Icon(
-                            _showProficiencyOverride
-                                ? Icons.expand_less
-                                : Icons.expand_more,
-                            size: 18,
-                          ),
-                        ],
+                    Text(
+                      _isCorrect ? '正確！' : '正確答案：${question.answer}',
+                      style: TextStyle(
+                        color: _isCorrect ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () => setState(
+                    () => _showProficiencyOverride = !_showProficiencyOverride,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('熟練度：', style: TextStyle(fontSize: 13)),
+                      Icon(
+                        _isCorrect ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 16,
+                        color: _isCorrect ? const Color.fromARGB(255, 1, 147, 11) : const Color.fromARGB(255, 255, 0, 0),
+                      ),
+                      const SizedBox(width: 4),
+                      proficiencyIcon(_pendingProficiency!, size: 24),
+                      const SizedBox(width: 2),
+                      Icon(
+                        _showProficiencyOverride
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        size: 18,
+                      ),
+                    ],
+                  ),
                 ),
                 if (_showProficiencyOverride) ...[
                   const SizedBox(height: 12),
