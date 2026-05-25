@@ -154,4 +154,22 @@ class DbHelper {
     );
     return maps.map(Word.fromMap).toList();
   }
+
+  Future<List<(Word, String)>> searchWords(String query) async {
+    final db = await database;
+    final pattern = '%$query%';
+    final rows = await db.rawQuery('''
+      SELECT w.*, wb.name as book_name
+      FROM words w
+      JOIN word_books wb ON w.word_book_id = wb.id
+      WHERE w.english LIKE ? OR w.chinese LIKE ?
+      ORDER BY w.english ASC
+      LIMIT 30
+    ''', [pattern, pattern]);
+    return rows.map((row) {
+      final word = Word.fromMap(row);
+      final bookName = row['book_name'] as String;
+      return (word, bookName);
+    }).toList();
+  }
 }
