@@ -155,6 +155,26 @@ class DbHelper {
     return maps.map(Word.fromMap).toList();
   }
 
+  Future<({int total, int recentCount, int avgProficiency})> getWordStats() async {
+    final db = await database;
+    final weekAgo = DateTime.now()
+        .subtract(const Duration(days: 7))
+        .millisecondsSinceEpoch;
+    final rows = await db.rawQuery('''
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as recent,
+        COALESCE(CAST(ROUND(AVG(CAST(proficiency AS REAL))) AS INTEGER), 0) as avg_prof
+      FROM words
+    ''', [weekAgo]);
+    final row = rows.first;
+    return (
+      total: row['total'] as int,
+      recentCount: (row['recent'] as int?) ?? 0,
+      avgProficiency: row['avg_prof'] as int,
+    );
+  }
+
   Future<List<(Word, String)>> searchWords(String query) async {
     final db = await database;
     final pattern = '%$query%';

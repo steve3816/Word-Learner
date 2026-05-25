@@ -26,6 +26,10 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
   bool _isSearchActive = false;
   List<(Word, String)> _searchResults = [];
 
+  int _totalWords = 0;
+  int _recentWords = 0;
+  int _avgProficiency = 0;
+
   @override
   void initState() {
     super.initState();
@@ -43,8 +47,18 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
   }
 
   Future<void> _loadWordBooks() async {
-    final books = await _db.getAllWordBooksWithCount();
-    setState(() => _wordBooks = books);
+    final results = await Future.wait([
+      _db.getAllWordBooksWithCount(),
+      _db.getWordStats(),
+    ]);
+    final books = results[0] as List<(WordBook, int, int)>;
+    final stats = results[1] as ({int total, int recentCount, int avgProficiency});
+    setState(() {
+      _wordBooks = books;
+      _totalWords = stats.total;
+      _recentWords = stats.recentCount;
+      _avgProficiency = stats.avgProficiency;
+    });
   }
 
   Future<void> _onSearchChanged(String query) async {
@@ -146,7 +160,28 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    _StatItem(label: '全部單字', value: '$_totalWords'),
+                    Container(width: 1, height: 36, color: Colors.grey.shade200),
+                    _StatItem(label: '本週新增', value: '$_recentWords'),
+                    Container(width: 1, height: 36, color: Colors.grey.shade200),
+                    _StatItem(label: '平均熟練度', value: '$_avgProficiency%'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
               child: TextField(
                 controller: _searchCtrl,
                 focusNode: _searchFocus,
@@ -305,6 +340,33 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
       floatingActionButton: GradientFAB(
         onPressed: _addWordBook,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }
