@@ -19,9 +19,13 @@ class WidgetService {
               })
           .toList());
       debugPrint('[Widget] syncing ${words.length} words');
+      final defaultBook = await _db.getDefaultWordBook();
       // shared_preferences stores as flutter.<key> in FlutterSharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('words_json', json);
+      if (defaultBook?.id != null) {
+        await prefs.setInt('default_word_book_id', defaultBook!.id!);
+      }
       await HomeWidget.updateWidget(androidName: _androidName);
     } catch (e) {
       debugPrint('[Widget] sync failed: $e');

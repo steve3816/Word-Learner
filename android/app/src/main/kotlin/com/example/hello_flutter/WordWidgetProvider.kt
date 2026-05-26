@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import android.widget.RemoteViews
 import org.json.JSONArray
@@ -91,14 +92,18 @@ class WordWidgetProvider : AppWidgetProvider() {
                     )
                 )
 
-                // 新增單字 → 開 app
-                val openIntent = Intent(context, MainActivity::class.java).apply {
+                // 新增單字 → 帶預設單字書 ID 開 AddWordScreen
+                val defaultBookId = prefs.getLong("flutter.default_word_book_id", -1L).toInt()
+                Log.d(TAG, "default_word_book_id=$defaultBookId")
+                val addUri = Uri.parse("wordlearner://addword?wordBookId=$defaultBookId")
+                val addIntent = Intent(context, MainActivity::class.java).apply {
+                    data = addUri
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
                 views.setOnClickPendingIntent(
                     R.id.widget_add,
                     PendingIntent.getActivity(
-                        context, 0, openIntent,
+                        context, 1, addIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                 )

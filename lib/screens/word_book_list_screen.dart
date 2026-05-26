@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
@@ -20,6 +21,7 @@ class WordBookListScreen extends StatefulWidget {
 class _WordBookListScreenState extends State<WordBookListScreen> {
   final _db = DbHelper();
   List<(WordBook, int, int)> _wordBooks = [];
+  static const _widgetChannel = MethodChannel('com.example.hello_flutter/widget');
 
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
@@ -36,6 +38,32 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
     _loadWordBooks();
     _searchFocus.addListener(() {
       setState(() => _isSearchActive = _searchFocus.hasFocus);
+    });
+    // 處理從 widget 點「新增單字」進來的情況
+    _widgetChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onWidgetUri') {
+        _handleWidgetUri(Uri.tryParse(call.arguments as String? ?? ''));
+      }
+    });
+    _checkWidgetLaunch();
+  }
+
+  Future<void> _checkWidgetLaunch() async {
+    final uri = await _widgetChannel.invokeMethod<String>('getInitialUri');
+    if (uri != null) _handleWidgetUri(Uri.tryParse(uri));
+  }
+
+  Future<void> _handleWidgetUri(Uri? uri) async {
+    if (uri?.host != 'addword') return;
+    final id = int.tryParse(uri?.queryParameters['wordBookId'] ?? '');
+    if (id == null || id == -1) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AddWordScreen(wordBookId: id)),
+      );
+      if (mounted) await _loadWordBooks();
     });
   }
 
