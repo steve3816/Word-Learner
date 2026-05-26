@@ -20,15 +20,21 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE word_books(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            created_at INTEGER NOT NULL
+            created_at INTEGER NOT NULL,
+            is_default INTEGER NOT NULL DEFAULT 0
           )
         ''');
+        await db.insert('word_books', {
+          'name': '我的單字書',
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+          'is_default': 1,
+        });
         await db.execute('''
           CREATE TABLE words(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,6 +89,31 @@ class DbHelper {
             'ALTER TABLE words ADD COLUMN proficiency INTEGER DEFAULT 0',
           );
         }
+        if (oldVersion < 5) {
+          await db.execute(
+            'ALTER TABLE word_books ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0',
+          );
+          // 把已存在的「我的單字書」標為預設；若已刪除則建一個新的
+          final rows = await db.query(
+            'word_books',
+            where: "name = '我的單字書'",
+            limit: 1,
+          );
+          if (rows.isNotEmpty) {
+            await db.update(
+              'word_books',
+              {'is_default': 1},
+              where: 'id = ?',
+              whereArgs: [rows.first['id']],
+            );
+          } else {
+            await db.insert('word_books', {
+              'name': '我的單字書',
+              'created_at': DateTime.now().millisecondsSinceEpoch,
+              'is_default': 1,
+            });
+          }
+        }
       },
     );
   }
@@ -100,8 +131,18 @@ class DbHelper {
 
   Future<void> deleteWordBook(int id) async {
     final db = await database;
+    final rows = await db.query('word_books',
+        columns: ['is_default'], where: 'id = ?', whereArgs: [id]);
+    if (rows.isNotEmpty && (rows.first['is_default'] as int) == 1) return;
     await db.delete('words', where: 'word_book_id = ?', whereArgs: [id]);
     await db.delete('word_books', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<WordBook?> getDefaultWordBook() async {
+    final db = await database;
+    final rows =
+        await db.query('word_books', where: 'is_default = 1', limit: 1);
+    return rows.isEmpty ? null : WordBook.fromMap(rows.first);
   }
 
   Future<List<(WordBook, int, int)>> getAllWordBooksWithCount() async {

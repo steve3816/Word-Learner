@@ -223,23 +223,25 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Slidable(
                                 key: Key('book_${book.id}'),
-                                endActionPane: ActionPane(
-                                  motion: const DrawerMotion(),
-                                  extentRatio: 0.2,
-                                  children: [
-                                    SlidableAction(
-                                      onPressed: (_) =>
-                                          _deleteWordBook(book, count),
-                                      backgroundColor: AppColors.pinkDark,
-                                      foregroundColor: Colors.white,
-                                      icon: Icons.delete,
-                                      borderRadius:
-                                          const BorderRadius.horizontal(
-                                        right: Radius.circular(12),
+                                endActionPane: book.isDefault
+                                    ? null
+                                    : ActionPane(
+                                        motion: const DrawerMotion(),
+                                        extentRatio: 0.2,
+                                        children: [
+                                          SlidableAction(
+                                            onPressed: (_) =>
+                                                _deleteWordBook(book, count),
+                                            backgroundColor: AppColors.pinkDark,
+                                            foregroundColor: Colors.white,
+                                            icon: Icons.delete,
+                                            borderRadius:
+                                                const BorderRadius.horizontal(
+                                              right: Radius.circular(12),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                ),
                                 child: Card(
                                   margin: EdgeInsets.zero,
                                   child: ListTile(
