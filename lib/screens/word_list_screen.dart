@@ -5,6 +5,7 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
 import '../utils/proficiency_util.dart';
+import '../services/widget_service.dart';
 import 'add_word_screen.dart';
 import 'quiz_screen.dart';
 
@@ -34,6 +35,7 @@ class _WordListScreenState extends State<WordListScreen> {
 
   Future<void> _deleteWord(int id) async {
     await _db.deleteWord(id);
+    WidgetService.syncWords();
     await _loadWords();
   }
 

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
 import 'screens/word_book_list_screen.dart';
+import 'services/widget_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  WidgetService.syncWords();
   runApp(const MyApp());
 }
 

@@ -6,6 +6,7 @@ import '../models/example_sentence.dart';
 import '../models/word.dart';
 import '../services/ai_service.dart';
 import '../services/settings_service.dart';
+import '../services/widget_service.dart';
 import '../utils/proficiency_util.dart';
 
 // Appended to the user's example prompt to enforce JSON response format.
@@ -210,6 +211,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       } else {
         await _db.updateWord(word);
       }
+      WidgetService.syncWords();
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
