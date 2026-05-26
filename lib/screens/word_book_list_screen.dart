@@ -134,7 +134,6 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('單字書'),
         actions: [
           if (_totalWordCount >= 3)
             IconButton(
@@ -208,13 +207,16 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
               child: Stack(
                 children: [
                   // 單字書列表（永遠存在，搜尋時被遮住）
-                  _wordBooks.isEmpty
-                      ? const Center(child: Text('還沒有單字書，點 + 新增吧！'))
-                      : ListView.builder(
+                  ListView.builder(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
-                          itemCount: _wordBooks.length,
+                          itemCount: _wordBooks.isEmpty ? 1 : _wordBooks.length,
                           itemBuilder: (context, index) {
+                            if (_wordBooks.isEmpty) {
+                              return const Center(
+                                child: Text('還沒有單字書，點 + 新增吧！'),
+                              );
+                            }
                             final (book, count, avgProficiency) =
                                 _wordBooks[index];
                             return Padding(
