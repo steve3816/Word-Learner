@@ -62,10 +62,6 @@ class WordWidgetProvider : AppWidgetProvider() {
                             val word = words.getJSONObject(Random.nextInt(words.length()))
                             views.setTextViewText(R.id.widget_english, word.getString("english"))
                             views.setTextViewText(R.id.widget_chinese, word.getString("chinese"))
-                            views.setTextViewText(
-                                R.id.widget_proficiency,
-                                proficiencyEmoji(word.getInt("proficiency"))
-                            )
                         } else {
                             setEmptyState(views)
                         }
@@ -76,7 +72,6 @@ class WordWidgetProvider : AppWidgetProvider() {
                 } else {
                     views.setTextViewText(R.id.widget_english, "開啟 app 同步單字")
                     views.setTextViewText(R.id.widget_chinese, "")
-                    views.setTextViewText(R.id.widget_proficiency, "")
                 }
 
                 // 換一個
@@ -117,15 +112,7 @@ class WordWidgetProvider : AppWidgetProvider() {
 
         private fun setEmptyState(views: RemoteViews) {
             views.setTextViewText(R.id.widget_english, "還沒有單字")
-            views.setTextViewText(R.id.widget_chinese, "點下方新增第一個吧")
-            views.setTextViewText(R.id.widget_proficiency, "")
-        }
-
-        private fun proficiencyEmoji(proficiency: Int): String = when {
-            proficiency >= 100 -> "😄"
-            proficiency >= 66  -> "🙂"
-            proficiency >= 33  -> "😐"
-            else               -> "😢"
+            views.setTextViewText(R.id.widget_chinese, "點 + 新增第一個吧")
         }
     }
 }
