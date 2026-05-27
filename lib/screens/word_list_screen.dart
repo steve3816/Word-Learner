@@ -21,10 +21,12 @@ class WordListScreen extends StatefulWidget {
 class _WordListScreenState extends State<WordListScreen> {
   final _db = DbHelper();
   List<Word> _words = [];
+  late WordBook _wordBook;
 
   @override
   void initState() {
     super.initState();
+    _wordBook = widget.wordBook;
     _loadWords();
   }
 
@@ -53,11 +55,55 @@ class _WordListScreenState extends State<WordListScreen> {
     }
   }
 
+  Future<void> _editWordBook() async {
+    final nameCtrl = TextEditingController(text: _wordBook.name);
+    final descCtrl = TextEditingController(text: _wordBook.description ?? '');
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('單字書設定'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: '名稱'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(labelText: '描述（選填）'),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('儲存'),
+          ),
+        ],
+      ),
+    );
+    if (result != true || nameCtrl.text.trim().isEmpty) return;
+    final updated = _wordBook.copyWith(
+      name: nameCtrl.text.trim(),
+      description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+    );
+    await _db.updateWordBook(updated);
+    if (mounted) setState(() => _wordBook = updated);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.wordBook.name),
+        title: Text(_wordBook.name),
         actions: [
           if (_words.length >= 3)
             IconButton(
@@ -70,6 +116,11 @@ class _WordListScreenState extends State<WordListScreen> {
                 ),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            tooltip: '單字書設定',
+            onPressed: _editWordBook,
+          ),
         ],
       ),
       body: DotGridBackground(

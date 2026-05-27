@@ -20,12 +20,13 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE word_books(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
+            description TEXT,
             created_at INTEGER NOT NULL,
             is_default INTEGER NOT NULL DEFAULT 0
           )
@@ -113,6 +114,9 @@ class DbHelper {
               'is_default': 1,
             });
           }
+        }
+        if (oldVersion < 6) {
+          await db.execute('ALTER TABLE word_books ADD COLUMN description TEXT');
         }
       },
     );

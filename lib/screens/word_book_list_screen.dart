@@ -99,33 +99,47 @@ class _WordBookListScreenState extends State<WordBookListScreen> {
   }
 
   Future<void> _addWordBook() async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final nameCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('新增單字書'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: '單字書名稱'),
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: '名稱 *'),
+              onSubmitted: (_) {},
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(hintText: '描述（選填）'),
+              maxLines: 2,
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(ctx, false),
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            onPressed: () => Navigator.pop(ctx, true),
             child: const Text('新增'),
           ),
         ],
       ),
     );
-    if (name == null || name.isEmpty) return;
-    await _db.insertWordBook(
-      WordBook(name: name, createdAt: DateTime.now()),
-    );
+    if (result != true || nameCtrl.text.trim().isEmpty) return;
+    await _db.insertWordBook(WordBook(
+      name: nameCtrl.text.trim(),
+      description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+      createdAt: DateTime.now(),
+    ));
     await _loadWordBooks();
   }
 
