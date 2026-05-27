@@ -31,9 +31,18 @@ class OpenAiCompatibleService implements AiService {
     ).timeout(const Duration(seconds: 10));
     debugPrint('[AI] $model ${response.statusCode}: ${response.body}');
     if (response.statusCode != 200) {
-      throw Exception('HTTP ${response.statusCode}');
+      throw Exception(_extractErrorMessage(response.body));
     }
     final data = jsonDecode(response.body);
     return (data['choices'][0]['message']['content'] as String).trim();
+  }
+
+  String _extractErrorMessage(String body) {
+    try {
+      final err = jsonDecode(body);
+      final message = err['error']?['message'] as String?;
+      if (message != null && message.isNotEmpty) return message;
+    } catch (_) {}
+    return body;
   }
 }
