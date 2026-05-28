@@ -56,6 +56,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
   AiService? _aiService;
   // Prompts loaded from settings, keyed by field name
   final Map<String, String> _prompts = {};
+  bool _loadingEnglish = false;
   bool _loadingChinese = false;
   bool _loadingExplanation = false;
   late int _proficiency;
@@ -127,6 +128,21 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _generateEnglish() async {
+    if (_chineseCtrl.text.trim().isEmpty || _aiService == null) return;
+    setState(() => _loadingEnglish = true);
+    try {
+      final prompt = (_prompts['english'] ?? '').replaceAll(
+          SettingsService.wordPlaceholder, _chineseCtrl.text.trim());
+      final result = await _aiService!.complete(prompt);
+      _englishCtrl.text = result.trim();
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => _loadingEnglish = false);
+    }
   }
 
   Future<void> _generateChinese() async {
@@ -305,11 +321,38 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    TextFormField(
-                      controller: _englishCtrl,
-                      decoration: const InputDecoration(labelText: '英文單字 *'),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? '請輸入英文單字' : null,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _englishCtrl,
+                            decoration:
+                                const InputDecoration(labelText: '英文單字 *'),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? '請輸入英文單字'
+                                : null,
+                          ),
+                        ),
+                        if (_aiService != null) ...[
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _chineseCtrl,
+                              builder: (_, value, _) {
+                                if (value.text.trim().isEmpty) {
+                                  return const SizedBox(width: 48);
+                                }
+                                return _aiButton(
+                                  loading: _loadingEnglish,
+                                  onPressed: _generateEnglish,
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 16),
                     Row(

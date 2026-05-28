@@ -2,6 +2,7 @@
   "defaultPrompts": {
     "chinese": "Provide a concise Chinese definition for the word \"{word}\". Return only the Chinese definition, nothing else.",
     "explanation": "Provide a concise English definition for the word \"{word}\" suitable for learners in one sentence. Return only the definition, nothing else.",
-    "example": "Provide a simple, natural English example sentence using the word \"{word}\"."
+    "example": "Provide a simple, natural English example sentence using the word \"{word}\".",
+    "english": "根據中文意思「{word}」，建議最精確的英文單字。只回傳英文單字本身，不要任何解釋或標點。"
   }
 }

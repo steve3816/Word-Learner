@@ -11,7 +11,7 @@ class SettingsService {
   static const _keyPrefix = 'api_key_';
   static const _promptPrefix = 'prompt_';
 
-  static const promptFields = ['chinese', 'explanation', 'example'];
+  static const promptFields = ['english', 'chinese', 'explanation', 'example'];
   static const wordPlaceholder = '{word}';
 
   // Cached default prompts loaded from assets/config.json
@@ -34,6 +34,8 @@ class SettingsService {
 
   static String promptLabel(String field) {
     switch (field) {
+      case 'english':
+        return '英文單字（由中文查詢）';
       case 'chinese':
         return '中文意思';
       case 'explanation':
