@@ -18,6 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _promptFocusNodes = <String, FocusNode>{};
   String? _focusedPromptField;
   AiProvider? _selectedProvider;
+  int _quizMaxProficiency = 100;
   bool _loading = true;
 
   @override
@@ -61,8 +62,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     for (final field in SettingsService.promptFields) {
       _promptControllers[field]!.text = await _settings.getPrompt(field);
     }
+    final quizMax = await _settings.getQuizMaxProficiency();
     setState(() {
       _selectedProvider = provider;
+      _quizMaxProficiency = quizMax;
       _loading = false;
     });
   }
@@ -99,6 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _settings.setApiKey(p, _keyControllers[p]!.text.trim());
     }
     await _settings.setSelectedProvider(_selectedProvider);
+    await _settings.setQuizMaxProficiency(_quizMaxProficiency);
     for (final field in SettingsService.promptFields) {
       final text = _promptControllers[field]!.text.trim();
       await _settings.setPrompt(
@@ -278,6 +282,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           )),
+                    ],
+                  ),
+                  ExpansionTile(
+                    title: const Text(
+                      '複習出題範圍',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    tilePadding: EdgeInsets.zero,
+                    children: [
+                      RadioGroup<int>(
+                        groupValue: _quizMaxProficiency,
+                        onChanged: (v) =>
+                            setState(() => _quizMaxProficiency = v!),
+                        child: Column(
+                          children: [
+                            const RadioListTile<int>(
+                              title: Text('全部'),
+                              value: 100,
+                            ),
+                            const RadioListTile<int>(
+                              title: Text('普通'),
+                              value: 99,
+                            ),
+                            const RadioListTile<int>(
+                              title: Text('有點不熟'),
+                              value: 66,
+                            ),
+                            const RadioListTile<int>(
+                              title: Text('非常不熟'),
+                              value: 33,
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ],

@@ -10,6 +10,7 @@ class SettingsService {
   static const _providerKey = 'selected_provider';
   static const _keyPrefix = 'api_key_';
   static const _promptPrefix = 'prompt_';
+  static const _quizMaxProficiencyKey = 'quiz_max_proficiency';
 
   static const promptFields = ['english', 'chinese', 'explanation', 'example'];
   static const wordPlaceholder = '{word}';
@@ -111,6 +112,16 @@ class SettingsService {
       case AiProvider.gemini:
         return GeminiService(apiKey: key);
     }
+  }
+
+  Future<int> getQuizMaxProficiency() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_quizMaxProficiencyKey) ?? 100;
+  }
+
+  Future<void> setQuizMaxProficiency(int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_quizMaxProficiencyKey, value);
   }
 
   Future<bool> hasAnyKey() async {

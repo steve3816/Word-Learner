@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
+import '../services/settings_service.dart';
 import '../utils/list_util.dart';
 import '../utils/proficiency_util.dart';
 
@@ -65,9 +66,11 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<void> _loadQuestions() async {
-    final words = widget.wordBookId != null
+    final all = widget.wordBookId != null
         ? await _db.getWordsByWordBook(widget.wordBookId!)
         : await _db.getAllWords();
+    final maxProficiency = await SettingsService().getQuizMaxProficiency();
+    final words = all.where((w) => w.proficiency <= maxProficiency).toList();
     setState(() {
       _questions = _generateQuestions(words);
       _loading = false;
