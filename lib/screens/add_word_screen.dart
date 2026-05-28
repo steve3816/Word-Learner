@@ -297,7 +297,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 labelText: '英文例句',
                 border: OutlineInputBorder(),
               ),
-              maxLines: 2,
+              minLines: 2,
+              maxLines: null,
             ),
             const SizedBox(height: 8),
             TextField(
@@ -306,7 +307,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 labelText: '例句中文翻譯',
                 border: OutlineInputBorder(),
               ),
-              maxLines: 2,
+              minLines: 2,
+              maxLines: null,
             ),
           ],
         ),
@@ -405,7 +407,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             controller: _explanationCtrl,
                             decoration: const InputDecoration(
                                 labelText: '英文解釋（選填）'),
-                            maxLines: 2,
+                            minLines: 2,
+                            maxLines: null,
                           ),
                         ),
                         if (_aiService != null) ...[
