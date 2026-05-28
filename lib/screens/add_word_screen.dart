@@ -271,9 +271,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 ),
                 const Spacer(),
                 if (_aiService != null)
-                  _aiButton(
-                    loading: entry.loading,
-                    onPressed: () => _generateExample(index),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _englishCtrl,
+                    builder: (_, value, _) {
+                      if (value.text.trim().isEmpty) {
+                        return const SizedBox(width: 48, height: 48);
+                      }
+                      return _aiButton(
+                        loading: entry.loading,
+                        onPressed: () => _generateExample(index),
+                      );
+                    },
                   ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -372,9 +380,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
                           const SizedBox(width: 8),
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: _aiButton(
-                              loading: _loadingChinese,
-                              onPressed: _generateChinese,
+                            child: ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _englishCtrl,
+                              builder: (_, value, _) {
+                                if (value.text.trim().isEmpty) {
+                                  return const SizedBox(width: 48);
+                                }
+                                return _aiButton(
+                                  loading: _loadingChinese,
+                                  onPressed: _generateChinese,
+                                );
+                              },
                             ),
                           ),
                         ],
@@ -396,9 +412,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
                           const SizedBox(width: 8),
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: _aiButton(
-                              loading: _loadingExplanation,
-                              onPressed: _generateExplanation,
+                            child: ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _englishCtrl,
+                              builder: (_, value, _) {
+                                if (value.text.trim().isEmpty) {
+                                  return const SizedBox(width: 48);
+                                }
+                                return _aiButton(
+                                  loading: _loadingExplanation,
+                                  onPressed: _generateExplanation,
+                                );
+                              },
                             ),
                           ),
                         ],
