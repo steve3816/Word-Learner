@@ -220,6 +220,33 @@ class DbHelper {
     );
   }
 
+  Future<List<(Word, String)>> getRecentWordsWithBook() async {
+    final db = await database;
+    final weekAgo = DateTime.now()
+        .subtract(const Duration(days: 7))
+        .millisecondsSinceEpoch;
+    final rows = await db.rawQuery('''
+      SELECT w.*, wb.name as book_name
+      FROM words w
+      JOIN word_books wb ON w.word_book_id = wb.id
+      WHERE w.created_at >= ?
+      ORDER BY w.created_at DESC
+    ''', [weekAgo]);
+    return rows.map((r) => (Word.fromMap(r), r['book_name'] as String)).toList();
+  }
+
+  Future<List<(Word, String)>> getLeastProficientWordsWithBook() async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT w.*, wb.name as book_name
+      FROM words w
+      JOIN word_books wb ON w.word_book_id = wb.id
+      WHERE w.proficiency <= 33
+      ORDER BY w.proficiency ASC, w.created_at DESC
+    ''');
+    return rows.map((r) => (Word.fromMap(r), r['book_name'] as String)).toList();
+  }
+
   Future<List<(Word, String)>> searchWords(String query) async {
     final db = await database;
     final pattern = '%$query%';
