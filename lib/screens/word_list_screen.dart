@@ -67,7 +67,6 @@ class _WordListScreenState extends State<WordListScreen> {
           children: [
             TextField(
               controller: nameCtrl,
-              autofocus: true,
               decoration: const InputDecoration(labelText: '名稱'),
             ),
             const SizedBox(height: 12),
