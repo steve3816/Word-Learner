@@ -288,10 +288,33 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ),
       );
     }
-    return IconButton.filled(
-      onPressed: onPressed,
-      icon: const Icon(Icons.auto_awesome),
-      tooltip: 'AI 產生',
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Tooltip(
+        message: 'AI 產生',
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.purpleDark, AppColors.pinkDark],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onPressed,
+              child: const Center(
+                child: Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

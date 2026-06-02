@@ -13,13 +13,13 @@ abstract class AppColors {
   static const line       = Color(0x1A2A2530); // 10% ink
   static const line2      = Color(0x0D2A2530); // 5% ink
 
-  static const purple     = Color(0xFFC4B5E8);
-  static const purpleDark = Color(0xFF8E7CC0);
-  static const purpleSoft = Color(0xFFEFEAF8);
+  static const purple     = Color(0xFF8DC9A0); // soft green
+  static const purpleDark = Color(0xFF2A7A4B); // deep emerald (primary)
+  static const purpleSoft = Color(0xFFE8F5EC); // pale green
 
-  static const pink       = Color(0xFFF0C4D4);
-  static const pinkDark   = Color(0xFFC77FA0);
-  static const pinkSoft   = Color(0xFFFAEAF1);
+  static const pink       = Color(0xFF5BB57A); // medium green
+  static const pinkDark   = Color(0xFF3E9E6A); // bright emerald (gradient end)
+  static const pinkSoft   = Color(0xFFEDF7F1); // very pale green
 
   static const blue       = Color(0xFFA8C5E0);
   static const blueDark   = Color(0xFF6E97BC);
