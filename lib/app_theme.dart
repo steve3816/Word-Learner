@@ -13,23 +13,26 @@ abstract class AppColors {
   static const line       = Color(0x1A2A2530); // 10% ink
   static const line2      = Color(0x0D2A2530); // 5% ink
 
-  static const orange     = Color(0xFFE07856);
-  static const orangeDark = Color(0xFFC85D38);
-  static const orangeSoft = Color(0xFFFAEADE);
+  static const purple     = Color(0xFFC4B5E8);
+  static const purpleDark = Color(0xFF8E7CC0);
+  static const purpleSoft = Color(0xFFEFEAF8);
 
-  static const amber      = Color(0xFFF0A000);
-  static const amberDark  = Color(0xFFD4850A);
-  static const amberSoft  = Color(0xFFFAEFDD);
+  static const pink       = Color(0xFFF0C4D4);
+  static const pinkDark   = Color(0xFFC77FA0);
+  static const pinkSoft   = Color(0xFFFAEAF1);
 
   static const blue       = Color(0xFFA8C5E0);
   static const blueDark   = Color(0xFF6E97BC);
   static const blueSoft   = Color(0xFFE5EEF7);
 
+  static const amber      = Color(0xFFF0D4A8);
+  static const amberSoft  = Color(0xFFFAEFDD);
+
   static const mint       = Color(0xFFB8DDC8);
   static const mintSoft   = Color(0xFFE6F2EC);
 }
 
-// ── Theme builder ─────────────────────────────────────────────────────────
+// ── Theme builder ──────────────────────────────────────────────────────────
 ThemeData buildAppTheme() {
   final base = ThemeData(useMaterial3: true);
   final textTheme =
@@ -40,9 +43,9 @@ ThemeData buildAppTheme() {
 
   return base.copyWith(
     colorScheme: const ColorScheme.light(
-      primary: AppColors.orangeDark,
+      primary: AppColors.purpleDark,
       onPrimary: Colors.white,
-      secondary: AppColors.amberDark,
+      secondary: AppColors.pinkDark,
       onSecondary: Colors.white,
       surface: AppColors.paper,
       onSurface: AppColors.ink,
@@ -91,21 +94,21 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.orangeDark, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.purpleDark, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.amberDark),
+        borderSide: const BorderSide(color: AppColors.pinkDark),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide:
-            const BorderSide(color: AppColors.amberDark, width: 1.5),
+            const BorderSide(color: AppColors.pinkDark, width: 1.5),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.orangeDark,
+        backgroundColor: AppColors.purpleDark,
         foregroundColor: Colors.white,
         elevation: 0,
         shadowColor: Colors.transparent,
@@ -120,10 +123,10 @@ ThemeData buildAppTheme() {
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: AppColors.orangeDark),
+      style: TextButton.styleFrom(foregroundColor: AppColors.purpleDark),
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: AppColors.orangeDark,
+      backgroundColor: AppColors.purpleDark,
       foregroundColor: Colors.white,
       elevation: 0,
       focusElevation: 0,
@@ -165,7 +168,7 @@ ThemeData buildAppTheme() {
     radioTheme: RadioThemeData(
       fillColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
-            ? AppColors.orangeDark
+            ? AppColors.purpleDark
             : AppColors.ink3,
       ),
     ),
@@ -261,12 +264,12 @@ class GradientButton extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.orangeDark, AppColors.amberDark],
+            colors: [AppColors.purpleDark, AppColors.pinkDark],
           ),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: AppColors.orangeDark.withValues(alpha: 0.35),
+              color: AppColors.purpleDark.withValues(alpha: 0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -310,12 +313,12 @@ class GradientFAB extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.orangeDark, AppColors.amberDark],
+          colors: [AppColors.purpleDark, AppColors.pinkDark],
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: AppColors.orangeDark.withValues(alpha: 0.45),
+            color: AppColors.purpleDark.withValues(alpha: 0.45),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
