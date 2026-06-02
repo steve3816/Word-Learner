@@ -104,7 +104,7 @@ class _WordListScreenState extends State<WordListScreen> {
       appBar: AppBar(
         title: Text(_wordBook.name),
         actions: [
-          if (_words.length >= 3)
+          if (_words.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.quiz),
               tooltip: '複習此單字書',
