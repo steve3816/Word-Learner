@@ -106,7 +106,7 @@ class _WordListScreenState extends State<WordListScreen> {
         actions: [
           if (_words.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.quiz),
+              icon: const Icon(Icons.history_edu),
               tooltip: '複習此單字書',
               onPressed: () => Navigator.push(
                 context,
@@ -126,47 +126,61 @@ class _WordListScreenState extends State<WordListScreen> {
         child: _words.isEmpty
             ? const Center(child: Text('還沒有單字，點 + 新增吧！'))
             : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: _words.length,
                 itemBuilder: (context, index) {
                   final word = _words[index];
-                  return Slidable(
-                    key: Key('word_${word.id}'),
-                    endActionPane: ActionPane(
-                      motion: const DrawerMotion(),
-                      extentRatio: 0.2,
-                      children: [
-                        SlidableAction(
-                          onPressed: (_) => _deleteWord(word.id!),
-                          backgroundColor: AppColors.pinkDark,
-                          foregroundColor: Colors.white,
-                          icon: Icons.delete,
-                        ),
-                      ],
-                    ),
-                    child: ListTile(
-                      title: Text(word.english),
-                      subtitle: Text(word.chinese),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _formatCreatedAt(word.createdAt),
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 8),
-                          proficiencyIcon(word.proficiency, size: 22),
-                        ],
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: AppColors.paper,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.line2),
                       ),
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AddWordScreen(word: word),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Slidable(
+                          key: Key('word_${word.id}'),
+                          endActionPane: ActionPane(
+                            motion: const DrawerMotion(),
+                            extentRatio: 0.2,
+                            children: [
+                              SlidableAction(
+                                onPressed: (_) => _deleteWord(word.id!),
+                                backgroundColor: AppColors.pinkDark,
+                                foregroundColor: Colors.white,
+                                icon: Icons.delete,
+                              ),
+                            ],
                           ),
-                        );
-                        await _loadWords();
-                      },
+                          child: ListTile(
+                            title: Text(word.english),
+                            subtitle: Text(word.chinese),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _formatCreatedAt(word.createdAt),
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.grey),
+                                ),
+                                const SizedBox(width: 8),
+                                proficiencyIcon(word.proficiency, size: 22),
+                              ],
+                            ),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AddWordScreen(word: word),
+                                ),
+                              );
+                              await _loadWords();
+                            },
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },
