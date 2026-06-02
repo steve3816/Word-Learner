@@ -240,6 +240,35 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final english = _englishCtrl.text.trim();
+    final invalidIndices = <int>[];
+    for (int i = 0; i < _examples.length; i++) {
+      final sentence = _examples[i].sentenceCtrl.text.trim();
+      if (sentence.isNotEmpty &&
+          !sentence.toLowerCase().contains(english.toLowerCase())) {
+        invalidIndices.add(i + 1);
+      }
+    }
+    if (invalidIndices.isNotEmpty && mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('例句錯誤'),
+          content: Text(
+            '例句 ${invalidIndices.join('、')} 未包含英文單字「$english」，請修正後再儲存。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('確認'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final examples = _examples
         .where((e) => e.sentenceCtrl.text.trim().isNotEmpty)
         .map((e) => ExampleSentence(
