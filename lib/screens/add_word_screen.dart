@@ -6,6 +6,7 @@ import '../models/example_sentence.dart';
 import '../models/word.dart';
 import '../services/ai_service.dart';
 import '../services/settings_service.dart';
+import '../services/tts_service.dart';
 import '../services/widget_service.dart';
 import '../utils/proficiency_util.dart';
 
@@ -398,8 +399,23 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     maxLines: null,
                   ),
                 ),
+                const SizedBox(width: 4),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: entry.sentenceCtrl,
+                    builder: (_, value, _) {
+                      if (value.text.trim().isEmpty) return const SizedBox(width: 40);
+                      return IconButton(
+                        icon: const Icon(Icons.volume_up_rounded),
+                        tooltip: '發音',
+                        onPressed: () => TtsService.instance.speak(value.text.trim()),
+                      );
+                    },
+                  ),
+                ),
                 if (_aiService != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: ValueListenableBuilder<TextEditingValue>(
@@ -487,8 +503,26 @@ class _AddWordScreenState extends State<AddWordScreen> {
                                 : null,
                           ),
                         ),
+                        const SizedBox(width: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: _englishCtrl,
+                            builder: (_, value, _) {
+                              if (value.text.trim().isEmpty) {
+                                return const SizedBox(width: 40);
+                              }
+                              return IconButton(
+                                icon: const Icon(Icons.volume_up_rounded),
+                                tooltip: '發音',
+                                onPressed: () => TtsService.instance
+                                    .speak(value.text.trim()),
+                              );
+                            },
+                          ),
+                        ),
                         if (_aiService != null) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: ValueListenableBuilder<TextEditingValue>(

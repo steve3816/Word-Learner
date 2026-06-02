@@ -5,6 +5,7 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
 import '../utils/proficiency_util.dart';
+import '../services/tts_service.dart';
 import '../services/widget_service.dart';
 import 'add_word_screen.dart';
 import 'quiz_screen.dart';
@@ -175,7 +176,17 @@ class _WordListScreenState extends State<WordListScreen> {
                                   style: const TextStyle(
                                       fontSize: 12, color: Colors.grey),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  icon: const Icon(Icons.volume_up_rounded,
+                                      size: 18),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: '發音',
+                                  onPressed: () =>
+                                      TtsService.instance.speak(word.english),
+                                ),
+                                const SizedBox(width: 4),
                                 proficiencyIcon(word.proficiency, size: 22),
                               ],
                             ),
