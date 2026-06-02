@@ -303,11 +303,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               value: 100,
                             ),
                             const RadioListTile<int>(
-                              title: Text('普通'),
+                              title: Text('普通以下'),
                               value: 99,
                             ),
                             const RadioListTile<int>(
-                              title: Text('有點不熟'),
+                              title: Text('有點不熟以下'),
                               value: 66,
                             ),
                             const RadioListTile<int>(
