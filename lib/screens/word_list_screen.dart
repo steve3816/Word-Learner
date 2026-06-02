@@ -136,11 +136,21 @@ class _WordListScreenState extends State<WordListScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.paper,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.line2),
+                        border: Border.all(color: AppColors.line),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2A2530).withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: Slidable(
+                        child: Row(
+                          children: [
+                            Container(width: 3, color: AppColors.purpleDark),
+                            Expanded(child: Slidable(
                           key: Key('word_${word.id}'),
                           endActionPane: ActionPane(
                             motion: const DrawerMotion(),
@@ -179,10 +189,12 @@ class _WordListScreenState extends State<WordListScreen> {
                               await _loadWords();
                             },
                           ),
-                        ),
-                      ),
-                    ),
-                  );
+                        )),      // Slidable, Expanded
+                          ],
+                        ),       // Row
+                      ),         // ClipRRect
+                    ),           // DecoratedBox
+                  );             // Padding
                 },
               ),
       ),
