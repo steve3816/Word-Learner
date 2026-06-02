@@ -21,11 +21,15 @@ class _ExampleEntry {
   final TextEditingController sentenceCtrl;
   final TextEditingController translationCtrl;
   bool loading;
+  bool loadingSentence;
+  bool loadingTranslation;
 
   _ExampleEntry({String sentence = '', String translation = ''})
       : sentenceCtrl = TextEditingController(text: sentence),
         translationCtrl = TextEditingController(text: translation),
-        loading = false;
+        loading = false,
+        loadingSentence = false,
+        loadingTranslation = false;
 
   void dispose() {
     sentenceCtrl.dispose();
@@ -171,6 +175,43 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
+  Future<void> _generateExampleSentence(int index) async {
+    if (_aiService == null) return;
+    final entry = _examples[index];
+    if (entry.translationCtrl.text.trim().isEmpty) return;
+    setState(() => entry.loadingSentence = true);
+    try {
+      final word = _englishCtrl.text.trim();
+      final chinese = entry.translationCtrl.text.trim();
+      final prompt =
+          '為英文單字「$word」，根據中文意思「$chinese」，造一個自然的英文例句。只回傳英文例句本身，不要任何解釋或翻譯。';
+      final result = await _aiService!.complete(prompt);
+      entry.sentenceCtrl.text = result.trim();
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => entry.loadingSentence = false);
+    }
+  }
+
+  Future<void> _generateExampleTranslation(int index) async {
+    if (_aiService == null) return;
+    final entry = _examples[index];
+    if (entry.sentenceCtrl.text.trim().isEmpty) return;
+    setState(() => entry.loadingTranslation = true);
+    try {
+      final sentence = entry.sentenceCtrl.text.trim();
+      final prompt =
+          '將以下英文例句翻譯成繁體中文：「$sentence」。只回傳中文翻譯，不要任何解釋。';
+      final result = await _aiService!.complete(prompt);
+      entry.translationCtrl.text = result.trim();
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => entry.loadingTranslation = false);
+    }
+  }
+
   Future<void> _generateExample(int index) async {
     if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
     setState(() => _examples[index].loading = true);
@@ -291,24 +332,74 @@ class _AddWordScreenState extends State<AddWordScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: entry.sentenceCtrl,
-              decoration: const InputDecoration(
-                labelText: '英文例句',
-                border: OutlineInputBorder(),
-              ),
-              minLines: 2,
-              maxLines: null,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: entry.sentenceCtrl,
+                    decoration: const InputDecoration(
+                      labelText: '英文例句',
+                      border: OutlineInputBorder(),
+                    ),
+                    minLines: 2,
+                    maxLines: null,
+                  ),
+                ),
+                if (_aiService != null) ...[
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: entry.translationCtrl,
+                      builder: (_, value, _) {
+                        if (value.text.trim().isEmpty) {
+                          return const SizedBox(width: 48);
+                        }
+                        return _aiButton(
+                          loading: entry.loadingSentence,
+                          onPressed: () => _generateExampleSentence(index),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: entry.translationCtrl,
-              decoration: const InputDecoration(
-                labelText: '例句中文翻譯',
-                border: OutlineInputBorder(),
-              ),
-              minLines: 2,
-              maxLines: null,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: entry.translationCtrl,
+                    decoration: const InputDecoration(
+                      labelText: '例句中文翻譯',
+                      border: OutlineInputBorder(),
+                    ),
+                    minLines: 2,
+                    maxLines: null,
+                  ),
+                ),
+                if (_aiService != null) ...[
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: entry.sentenceCtrl,
+                      builder: (_, value, _) {
+                        if (value.text.trim().isEmpty) {
+                          return const SizedBox(width: 48);
+                        }
+                        return _aiButton(
+                          loading: entry.loadingTranslation,
+                          onPressed: () => _generateExampleTranslation(index),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
