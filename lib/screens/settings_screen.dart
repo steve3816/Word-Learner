@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../app_theme.dart';
 import '../services/ai_service.dart';
+import '../services/export_service.dart';
 import '../services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -282,6 +283,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           )),
+                    ],
+                  ),
+                  ExpansionTile(
+                    title: const Text(
+                      '資料管理',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    tilePadding: EdgeInsets.zero,
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.upload_file_outlined),
+                        title: const Text('匯出全部單字書'),
+                        subtitle: const Text('以 JSON 格式分享所有單字書'),
+                        onTap: () async {
+                          try {
+                            await ExportService().exportAll();
+                          } catch (e) {
+                            if (context.mounted) {
+                              showErrorSnackBar(context, '匯出失敗：$e');
+                            }
+                          }
+                        },
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.download_outlined),
+                        title: const Text('匯入單字書'),
+                        subtitle: const Text('從 JSON 檔案匯入'),
+                        onTap: () async {
+                          try {
+                            final service = ExportService();
+                            final preview = await service.pickAndPreview();
+                            if (preview == null) return;
+                            if (!context.mounted) return;
+
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('確認匯入'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('檔案：${preview.fileName}',
+                                        style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                                    const SizedBox(height: 12),
+                                    Text('${preview.wordBookCount} 本單字書，共 ${preview.wordCount} 個單字'),
+                                    const SizedBox(height: 8),
+                                    ...preview.bookNames.map((name) => Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Row(children: [
+                                            const Icon(Icons.book_outlined, size: 14, color: Colors.grey),
+                                            const SizedBox(width: 6),
+                                            Expanded(child: Text(name, style: const TextStyle(fontSize: 13))),
+                                          ]),
+                                        )),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('取消'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('確認匯入'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed != true) return;
+
+                            await service.importData(preview);
+                            if (!context.mounted) return;
+                            showSuccessSnackBar(context,
+                                '已匯入 ${preview.wordBookCount} 本單字書');
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            showErrorSnackBar(context, '匯入失敗：$e');
+                          }
+                        },
+                      ),
                     ],
                   ),
                   ExpansionTile(

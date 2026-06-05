@@ -5,6 +5,7 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
 import '../utils/proficiency_util.dart';
+import '../services/export_service.dart';
 import '../services/tts_service.dart';
 import '../services/widget_service.dart';
 import 'add_word_screen.dart';
@@ -53,6 +54,15 @@ class _WordListScreenState extends State<WordListScreen> {
       return '1禮拜';
     } else {
       return '${createdAt.year}/${createdAt.month.toString().padLeft(2, '0')}/${createdAt.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  Future<void> _exportWordBook() async {
+    try {
+      await ExportService().exportWordBook(_wordBook);
+    } catch (e) {
+      if (!mounted) return;
+      showErrorSnackBar(context, '匯出失敗：$e');
     }
   }
 
@@ -116,10 +126,19 @@ class _WordListScreenState extends State<WordListScreen> {
                 ),
               ),
             ),
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            tooltip: '單字書設定',
-            onPressed: _editWordBook,
+            onSelected: (value) async {
+              if (value == 'settings') {
+                _editWordBook();
+              } else if (value == 'export') {
+                _exportWordBook();
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'settings', child: Text('單字書設定')),
+              PopupMenuItem(value: 'export', child: Text('匯出此單字書')),
+            ],
           ),
         ],
       ),

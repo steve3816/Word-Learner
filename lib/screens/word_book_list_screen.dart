@@ -240,6 +240,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
+              _loadAll();
             },
           ),
         ],

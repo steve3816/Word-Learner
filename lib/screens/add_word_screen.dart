@@ -307,6 +307,58 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
+  Widget _speakerBtn(String text) => Material(
+        color: AppColors.cream2,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () => TtsService.instance.speak(text),
+          child: const SizedBox(
+            width: 26,
+            height: 26,
+            child: Icon(Icons.volume_up_rounded, size: 13, color: AppColors.ink3),
+          ),
+        ),
+      );
+
+  // Wraps a field in a Stack so the speaker btn appears at bottom-right.
+  Widget _withSpeaker(Widget field, TextEditingController ctrl) {
+    return Stack(
+      children: [
+        field,
+        Positioned(
+          right: 8,
+          bottom: 8,
+          child: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: ctrl,
+            builder: (_, value, _) => value.text.trim().isEmpty
+                ? const SizedBox.shrink()
+                : _speakerBtn(value.text.trim()),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _aiIconBtn({required bool loading, required VoidCallback onPressed}) {
+    if (loading) {
+      return const Padding(
+        padding: EdgeInsets.all(6),
+        child: SizedBox(
+          width: 18, height: 18,
+          child: CircularProgressIndicator(strokeWidth: 1.5),
+        ),
+      );
+    }
+    return IconButton(
+      icon: const Icon(Icons.auto_awesome, size: 18),
+      onPressed: onPressed,
+      style: IconButton.styleFrom(foregroundColor: AppColors.purpleDark),
+      padding: const EdgeInsets.all(6),
+      constraints: const BoxConstraints(),
+    );
+  }
+
   Widget _aiButton({required bool loading, required VoidCallback onPressed}) {
     if (loading) {
       return const SizedBox(
@@ -389,47 +441,30 @@ class _AddWordScreenState extends State<AddWordScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: entry.sentenceCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '英文例句',
-                      border: OutlineInputBorder(),
+                  child: _withSpeaker(
+                    TextField(
+                      controller: entry.sentenceCtrl,
+                      decoration: const InputDecoration(
+                        labelText: '英文例句',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.fromLTRB(14, 14, 42, 14),
+                      ),
+                      minLines: 2,
+                      maxLines: null,
                     ),
-                    minLines: 2,
-                    maxLines: null,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: entry.sentenceCtrl,
-                    builder: (_, value, _) {
-                      if (value.text.trim().isEmpty) return const SizedBox(width: 40);
-                      return IconButton(
-                        icon: const Icon(Icons.volume_up_rounded),
-                        tooltip: '發音',
-                        onPressed: () => TtsService.instance.speak(value.text.trim()),
-                      );
-                    },
+                    entry.sentenceCtrl,
                   ),
                 ),
                 if (_aiService != null) ...[
-                  const SizedBox(width: 4),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: entry.translationCtrl,
-                      builder: (_, value, _) {
-                        if (value.text.trim().isEmpty) {
-                          return const SizedBox(width: 48);
-                        }
-                        return _aiButton(
-                          loading: entry.loadingSentence,
-                          onPressed: () => _generateExampleSentence(index),
-                        );
-                      },
-                    ),
+                  const SizedBox(width: 6),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: entry.translationCtrl,
+                    builder: (_, value, _) => value.text.trim().isEmpty
+                        ? const SizedBox.shrink()
+                        : _aiIconBtn(
+                            loading: entry.loadingSentence,
+                            onPressed: () => _generateExampleSentence(index),
+                          ),
                   ),
                 ],
               ],
@@ -450,21 +485,15 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   ),
                 ),
                 if (_aiService != null) ...[
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: entry.sentenceCtrl,
-                      builder: (_, value, _) {
-                        if (value.text.trim().isEmpty) {
-                          return const SizedBox(width: 48);
-                        }
-                        return _aiButton(
-                          loading: entry.loadingTranslation,
-                          onPressed: () => _generateExampleTranslation(index),
-                        );
-                      },
-                    ),
+                  const SizedBox(width: 6),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: entry.sentenceCtrl,
+                    builder: (_, value, _) => value.text.trim().isEmpty
+                        ? const SizedBox.shrink()
+                        : _aiIconBtn(
+                            loading: entry.loadingTranslation,
+                            onPressed: () => _generateExampleTranslation(index),
+                          ),
                   ),
                 ],
               ],
@@ -491,119 +520,86 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   padding: const EdgeInsets.all(16),
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
-                          child: TextFormField(
-                            controller: _englishCtrl,
-                            decoration:
-                                const InputDecoration(labelText: '英文單字 *'),
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? '請輸入英文單字'
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _englishCtrl,
-                            builder: (_, value, _) {
-                              if (value.text.trim().isEmpty) {
-                                return const SizedBox(width: 40);
-                              }
-                              return IconButton(
-                                icon: const Icon(Icons.volume_up_rounded),
-                                tooltip: '發音',
-                                onPressed: () => TtsService.instance
-                                    .speak(value.text.trim()),
-                              );
-                            },
+                          child: _withSpeaker(
+                            TextFormField(
+                              controller: _englishCtrl,
+                              decoration: const InputDecoration(
+                                labelText: '英文單字 *',
+                                contentPadding: EdgeInsets.fromLTRB(14, 14, 42, 14),
+                              ),
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? '請輸入英文單字'
+                                  : null,
+                            ),
+                            _englishCtrl,
                           ),
                         ),
                         if (_aiService != null) ...[
-                          const SizedBox(width: 4),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: _chineseCtrl,
-                              builder: (_, value, _) {
-                                if (value.text.trim().isEmpty) {
-                                  return const SizedBox(width: 48);
-                                }
-                                return _aiButton(
-                                  loading: _loadingEnglish,
-                                  onPressed: _generateEnglish,
-                                );
-                              },
-                            ),
+                          const SizedBox(width: 6),
+                          ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: _chineseCtrl,
+                            builder: (_, value, _) => value.text.trim().isEmpty
+                                ? const SizedBox.shrink()
+                                : _aiIconBtn(
+                                    loading: _loadingEnglish,
+                                    onPressed: _generateEnglish,
+                                  ),
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: TextFormField(
                             controller: _chineseCtrl,
-                            decoration:
-                                const InputDecoration(labelText: '中文意思 *'),
+                            decoration: const InputDecoration(labelText: '中文意思 *'),
                             validator: (v) => (v == null || v.trim().isEmpty)
                                 ? '請輸入中文意思'
                                 : null,
                           ),
                         ),
                         if (_aiService != null) ...[
-                          const SizedBox(width: 8),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: _englishCtrl,
-                              builder: (_, value, _) {
-                                if (value.text.trim().isEmpty) {
-                                  return const SizedBox(width: 48);
-                                }
-                                return _aiButton(
-                                  loading: _loadingChinese,
-                                  onPressed: _generateChinese,
-                                );
-                              },
-                            ),
+                          const SizedBox(width: 6),
+                          ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: _englishCtrl,
+                            builder: (_, value, _) => value.text.trim().isEmpty
+                                ? const SizedBox.shrink()
+                                : _aiIconBtn(
+                                    loading: _loadingChinese,
+                                    onPressed: _generateChinese,
+                                  ),
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: TextFormField(
                             controller: _explanationCtrl,
-                            decoration: const InputDecoration(
-                                labelText: '英文解釋（選填）'),
+                            decoration: const InputDecoration(labelText: '英文解釋（選填）'),
                             minLines: 2,
                             maxLines: null,
                           ),
                         ),
                         if (_aiService != null) ...[
-                          const SizedBox(width: 8),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: _englishCtrl,
-                              builder: (_, value, _) {
-                                if (value.text.trim().isEmpty) {
-                                  return const SizedBox(width: 48);
-                                }
-                                return _aiButton(
-                                  loading: _loadingExplanation,
-                                  onPressed: _generateExplanation,
-                                );
-                              },
-                            ),
+                          const SizedBox(width: 6),
+                          ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: _englishCtrl,
+                            builder: (_, value, _) => value.text.trim().isEmpty
+                                ? const SizedBox.shrink()
+                                : _aiIconBtn(
+                                    loading: _loadingExplanation,
+                                    onPressed: _generateExplanation,
+                                  ),
                           ),
                         ],
                       ],
