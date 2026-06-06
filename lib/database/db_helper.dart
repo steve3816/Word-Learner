@@ -157,7 +157,7 @@ class DbHelper {
       FROM word_books wb
       LEFT JOIN words w ON w.word_book_id = wb.id
       GROUP BY wb.id
-      ORDER BY wb.created_at DESC
+      ORDER BY wb.is_default DESC, wb.created_at DESC
     ''');
     return rows.map((row) {
       final book = WordBook.fromMap(row);
