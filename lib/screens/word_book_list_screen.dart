@@ -226,7 +226,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
         actions: [
           if (totalWordCount >= 3)
             IconButton(
-              icon: const Icon(Icons.quiz),
+              icon: const Icon(Icons.history_edu),
               tooltip: '複習全部單字',
               onPressed: () => Navigator.push(
                 context,
