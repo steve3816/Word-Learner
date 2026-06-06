@@ -325,49 +325,59 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                               _wordBooks[index];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: Slidable(
-                              key: Key('book_${book.id}'),
-                              endActionPane: book.isDefault
-                                  ? null
-                                  : ActionPane(
-                                      motion: const DrawerMotion(),
-                                      extentRatio: 0.2,
-                                      children: [
-                                        SlidableAction(
-                                          onPressed: (_) =>
-                                              _deleteWordBook(book, count),
-                                          backgroundColor: AppColors.pinkDark,
-                                          foregroundColor: Colors.white,
-                                          icon: Icons.delete,
-                                          borderRadius:
-                                              const BorderRadius.horizontal(
-                                            right: Radius.circular(12),
-                                          ),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: AppColors.paper,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.line),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF2A2530).withValues(alpha: 0.06),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Slidable(
+                                  key: Key('book_${book.id}'),
+                                  endActionPane: book.isDefault
+                                      ? null
+                                      : ActionPane(
+                                          motion: const DrawerMotion(),
+                                          extentRatio: 0.2,
+                                          children: [
+                                            SlidableAction(
+                                              onPressed: (_) =>
+                                                  _deleteWordBook(book, count),
+                                              backgroundColor: Colors.red,
+                                              foregroundColor: Colors.white,
+                                              icon: Icons.delete,
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                              child: Card(
-                                margin: EdgeInsets.zero,
-                                child: ListTile(
-                                  leading: const Icon(Icons.menu_book_rounded),
-                                  title: Text(book.name,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600)),
-                                  subtitle: Text('$count 個單字'),
-                                  trailing: count > 0
-                                      ? proficiencyIcon(avgProficiency,
-                                          size: 24)
-                                      : null,
-                                  onTap: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            WordListScreen(wordBook: book),
-                                      ),
-                                    );
-                                    await _loadAll();
-                                  },
+                                  child: ListTile(
+                                    leading: const Icon(Icons.menu_book_rounded),
+                                    title: Text(book.name,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600)),
+                                    subtitle: Text('$count 個單字'),
+                                    trailing: count > 0
+                                        ? proficiencyIcon(avgProficiency,
+                                            size: 24)
+                                        : null,
+                                    onTap: () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              WordListScreen(wordBook: book),
+                                        ),
+                                      );
+                                      await _loadAll();
+                                    },
+                                  ),
                                 ),
                               ),
                             ),

@@ -178,7 +178,7 @@ class _WordListScreenState extends State<WordListScreen> {
                             children: [
                               SlidableAction(
                                 onPressed: (_) => _deleteWord(word.id!),
-                                backgroundColor: AppColors.pinkDark,
+                                backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,
                                 icon: Icons.delete,
                               ),
