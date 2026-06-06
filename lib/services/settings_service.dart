@@ -59,6 +59,20 @@ class SettingsService {
     await prefs.setString('$_promptPrefix$field', prompt);
   }
 
+  Future<Map<String, String>> getAllPrompts() async {
+    final result = <String, String>{};
+    for (final field in promptFields) {
+      result[field] = await getPrompt(field);
+    }
+    return result;
+  }
+
+  Future<void> setAllPrompts(Map<String, String> prompts) async {
+    for (final entry in prompts.entries) {
+      await setPrompt(entry.key, entry.value);
+    }
+  }
+
   Future<AiProvider?> getSelectedProvider() async {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getString(_providerKey);

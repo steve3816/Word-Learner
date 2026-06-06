@@ -122,6 +122,111 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() => _promptControllers[field]!.text = def);
   }
 
+  Future<void> _exportAll() async {
+    bool includePrompts = false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('匯出全部單字書'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('將所有單字書匯出為 JSON 檔案分享。'),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('包含提示詞設定'),
+                value: includePrompts,
+                onChanged: (v) => setState(() => includePrompts = v ?? false),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('匯出'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ExportService().exportAll(includePrompts: includePrompts);
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, '匯出失敗：$e');
+    }
+  }
+
+  Future<void> _import() async {
+    final service = ExportService();
+    ImportPreview? preview;
+    try {
+      preview = await service.pickAndPreview();
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, '讀取檔案失敗：$e');
+      return;
+    }
+    if (preview == null || !mounted) return;
+
+    bool importPrompts = false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('確認匯入'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('檔案：${preview!.fileName}'),
+              const SizedBox(height: 4),
+              Text('單字書：${preview.wordBookCount} 本　單字：${preview.wordCount} 個'),
+              const SizedBox(height: 8),
+              ...preview.bookNames.map((name) => Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 2),
+                    child: Text('• $name', style: const TextStyle(fontSize: 13)),
+                  )),
+              if (preview.hasPrompts) ...[
+                const Divider(height: 20),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('同時匯入提示詞設定'),
+                  subtitle: const Text('將覆蓋現有提示詞', style: TextStyle(fontSize: 12)),
+                  value: importPrompts,
+                  onChanged: (v) => setState(() => importPrompts = v ?? false),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('匯入'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await service.importData(preview, importPrompts: importPrompts);
+      if (mounted) showSuccessSnackBar(context, '匯入成功');
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, '匯入失敗：$e');
+    }
+  }
+
   void _insertWordPlaceholder(String field) {
     final controller = _promptControllers[field]!;
     final text = controller.text;
@@ -297,74 +402,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         leading: const Icon(Icons.upload_file_outlined),
                         title: const Text('匯出全部單字書'),
                         subtitle: const Text('以 JSON 格式分享所有單字書'),
-                        onTap: () async {
-                          try {
-                            await ExportService().exportAll();
-                          } catch (e) {
-                            if (context.mounted) {
-                              showErrorSnackBar(context, '匯出失敗：$e');
-                            }
-                          }
-                        },
+                        onTap: _exportAll,
                       ),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.download_outlined),
                         title: const Text('匯入單字書'),
                         subtitle: const Text('從 JSON 檔案匯入'),
-                        onTap: () async {
-                          try {
-                            final service = ExportService();
-                            final preview = await service.pickAndPreview();
-                            if (preview == null) return;
-                            if (!context.mounted) return;
-
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('確認匯入'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('檔案：${preview.fileName}',
-                                        style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                                    const SizedBox(height: 12),
-                                    Text('${preview.wordBookCount} 本單字書，共 ${preview.wordCount} 個單字'),
-                                    const SizedBox(height: 8),
-                                    ...preview.bookNames.map((name) => Padding(
-                                          padding: const EdgeInsets.only(top: 4),
-                                          child: Row(children: [
-                                            const Icon(Icons.book_outlined, size: 14, color: Colors.grey),
-                                            const SizedBox(width: 6),
-                                            Expanded(child: Text(name, style: const TextStyle(fontSize: 13))),
-                                          ]),
-                                        )),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('取消'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('確認匯入'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirmed != true) return;
-
-                            await service.importData(preview);
-                            if (!context.mounted) return;
-                            showSuccessSnackBar(context,
-                                '已匯入 ${preview.wordBookCount} 本單字書');
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            showErrorSnackBar(context, '匯入失敗：$e');
-                          }
-                        },
+                        onTap: _import,
                       ),
                     ],
                   ),
