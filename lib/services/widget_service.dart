@@ -13,6 +13,7 @@ class WidgetService {
       final words = await _db.getAllWords();
       final json = jsonEncode(words
           .map((w) => {
+                'id': w.id,
                 'english': w.english,
                 'chinese': w.chinese,
                 'proficiency': w.proficiency,

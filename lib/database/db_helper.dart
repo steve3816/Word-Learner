@@ -189,6 +189,12 @@ class DbHelper {
     return maps.map(Word.fromMap).toList();
   }
 
+  Future<Word?> getWordById(int id) async {
+    final db = await database;
+    final maps = await db.query('words', where: 'id = ?', whereArgs: [id], limit: 1);
+    return maps.isEmpty ? null : Word.fromMap(maps.first);
+  }
+
   Future<List<Word>> getWordsByWordBook(int wordBookId) async {
     final db = await database;
     final maps = await db.query(

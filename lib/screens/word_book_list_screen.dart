@@ -90,17 +90,32 @@ class _WordBookListScreenState extends State<WordBookListScreen>
   }
 
   Future<void> _handleWidgetUri(Uri? uri) async {
-    if (uri?.host != 'addword') return;
-    final id = int.tryParse(uri?.queryParameters['wordBookId'] ?? '');
-    if (id == null || id == -1) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => AddWordScreen(wordBookId: id)),
-      );
-      if (mounted) await _loadAll();
-    });
+    if (uri == null) return;
+    if (uri.host == 'addword') {
+      final id = int.tryParse(uri.queryParameters['wordBookId'] ?? '');
+      if (id == null || id == -1) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AddWordScreen(wordBookId: id)),
+        );
+        if (mounted) await _loadAll();
+      });
+    } else if (uri.host == 'word') {
+      final wordId = int.tryParse(uri.queryParameters['wordId'] ?? '');
+      if (wordId == null) return;
+      final word = await _db.getWordById(wordId);
+      if (word == null || !mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
+        );
+        if (mounted) await _loadAll();
+      });
+    }
   }
 
   Future<void> _onSearchChanged(String query) async {

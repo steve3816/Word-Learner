@@ -55,6 +55,7 @@ class WordWidgetProvider : AppWidgetProvider() {
                 Log.d(TAG, "words_json length=${json?.length ?: "null"}")
                 val views = RemoteViews(context.packageName, R.layout.word_widget)
 
+                var displayedWordId: Int? = null
                 if (!json.isNullOrEmpty()) {
                     try {
                         val words = JSONArray(json)
@@ -62,6 +63,7 @@ class WordWidgetProvider : AppWidgetProvider() {
                             val word = words.getJSONObject(Random.nextInt(words.length()))
                             views.setTextViewText(R.id.widget_english, word.getString("english"))
                             views.setTextViewText(R.id.widget_chinese, word.getString("chinese"))
+                            displayedWordId = if (word.has("id")) word.getInt("id") else null
                         } else {
                             setEmptyState(views)
                         }
@@ -72,6 +74,22 @@ class WordWidgetProvider : AppWidgetProvider() {
                 } else {
                     views.setTextViewText(R.id.widget_english, "開啟 app 同步單字")
                     views.setTextViewText(R.id.widget_chinese, "")
+                }
+
+                // 點單字 → 進單字詳細頁
+                if (displayedWordId != null) {
+                    val wordUri = Uri.parse("wordlearner://word?wordId=$displayedWordId")
+                    val wordIntent = Intent(context, MainActivity::class.java).apply {
+                        data = wordUri
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    views.setOnClickPendingIntent(
+                        R.id.widget_word_area,
+                        PendingIntent.getActivity(
+                            context, appWidgetId * 10 + 2, wordIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                    )
                 }
 
                 // 換一個
