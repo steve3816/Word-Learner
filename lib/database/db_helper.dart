@@ -183,6 +183,26 @@ class DbHelper {
     await db.delete('words', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<void> moveWords(List<int> wordIds, int targetWordBookId) async {
+    if (wordIds.isEmpty) return;
+    final db = await database;
+    final placeholders = List.filled(wordIds.length, '?').join(',');
+    await db.rawUpdate(
+      'UPDATE words SET word_book_id = ? WHERE id IN ($placeholders)',
+      [targetWordBookId, ...wordIds],
+    );
+  }
+
+  Future<void> moveWordsByBooks(List<int> sourceBookIds, int targetWordBookId) async {
+    if (sourceBookIds.isEmpty) return;
+    final db = await database;
+    final placeholders = List.filled(sourceBookIds.length, '?').join(',');
+    await db.rawUpdate(
+      'UPDATE words SET word_book_id = ? WHERE word_book_id IN ($placeholders)',
+      [targetWordBookId, ...sourceBookIds],
+    );
+  }
+
   Future<List<Word>> getAllWords() async {
     final db = await database;
     final maps = await db.query('words', orderBy: 'created_at DESC');

@@ -25,6 +25,9 @@ class _WordListScreenState extends State<WordListScreen> {
   List<Word> _words = [];
   late WordBook _wordBook;
 
+  bool _isSelecting = false;
+  final Set<int> _selectedIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +44,62 @@ class _WordListScreenState extends State<WordListScreen> {
     await _db.deleteWord(id);
     WidgetService.syncWords();
     await _loadWords();
+  }
+
+  void _enterSelectMode(int wordId) {
+    setState(() {
+      _isSelecting = true;
+      _selectedIds.add(wordId);
+    });
+  }
+
+  void _exitSelectMode() {
+    setState(() {
+      _isSelecting = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelection(int wordId) {
+    setState(() {
+      if (_selectedIds.contains(wordId)) {
+        _selectedIds.remove(wordId);
+      } else {
+        _selectedIds.add(wordId);
+      }
+    });
+  }
+
+  Future<void> _moveSelected() async {
+    final books = await _db.getAllWordBooksWithCount();
+    final others = books.where((b) => b.$1.id != _wordBook.id).toList();
+    if (!mounted) return;
+
+    final target = await showDialog<WordBook>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('移動到'),
+        children: others.isEmpty
+            ? [const SimpleDialogOption(child: Text('沒有其他單字書'))]
+            : others
+                .map((b) => SimpleDialogOption(
+                      onPressed: () => Navigator.pop(ctx, b.$1),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(b.$1.name),
+                      ),
+                    ))
+                .toList(),
+      ),
+    );
+
+    if (target == null || !mounted) return;
+    final count = _selectedIds.length;
+    await _db.moveWords(_selectedIds.toList(), target.id!);
+    WidgetService.syncWords();
+    _exitSelectMode();
+    await _loadWords();
+    if (mounted) showSuccessSnackBar(context, '已移動 $count 個單字到「${target.name}」');
   }
 
   String _formatCreatedAt(DateTime createdAt) {
@@ -111,55 +170,86 @@ class _WordListScreenState extends State<WordListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final allSelected = _selectedIds.length == _words.length;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_wordBook.name),
-        actions: [
-          if (_words.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.history_edu),
-              tooltip: '複習此單字書',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => QuizScreen(wordBookId: widget.wordBook.id),
-                ),
+      appBar: _isSelecting
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _exitSelectMode,
               ),
+              title: Text('已選 ${_selectedIds.length} 個'),
+              actions: [
+                TextButton(
+                  onPressed: () => setState(() {
+                    if (allSelected) {
+                      _selectedIds.clear();
+                    } else {
+                      _selectedIds.addAll(_words.map((w) => w.id!));
+                    }
+                  }),
+                  child: Text(allSelected ? '取消全選' : '全選'),
+                ),
+              ],
+            )
+          : AppBar(
+              title: Text(_wordBook.name),
+              actions: [
+                if (_words.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.history_edu),
+                    tooltip: '複習此單字書',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            QuizScreen(wordBookId: widget.wordBook.id),
+                      ),
+                    ),
+                  ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) async {
+                    if (value == 'settings') {
+                      _editWordBook();
+                    } else if (value == 'export') {
+                      _exportWordBook();
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'settings', child: Text('單字書設定')),
+                    PopupMenuItem(value: 'export', child: Text('匯出此單字書')),
+                  ],
+                ),
+              ],
             ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) async {
-              if (value == 'settings') {
-                _editWordBook();
-              } else if (value == 'export') {
-                _exportWordBook();
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'settings', child: Text('單字書設定')),
-              PopupMenuItem(value: 'export', child: Text('匯出此單字書')),
-            ],
-          ),
-        ],
-      ),
       body: DotGridBackground(
         child: _words.isEmpty
             ? const Center(child: Text('還沒有單字，點 + 新增吧！'))
             : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: _words.length,
                 itemBuilder: (context, index) {
                   final word = _words[index];
+                  final selected = _selectedIds.contains(word.id);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: AppColors.paper,
+                        color: selected
+                            ? AppColors.purpleSoft
+                            : AppColors.paper,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.line),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.purpleDark
+                              : AppColors.line,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2A2530).withValues(alpha: 0.06),
+                            color: const Color(0xFF2A2530)
+                                .withValues(alpha: 0.06),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -169,77 +259,125 @@ class _WordListScreenState extends State<WordListScreen> {
                         borderRadius: BorderRadius.circular(14),
                         child: Row(
                           children: [
-                            Container(width: 3, color: AppColors.purpleDark),
-                            Expanded(child: Slidable(
-                          key: Key('word_${word.id}'),
-                          endActionPane: ActionPane(
-                            motion: const DrawerMotion(),
-                            extentRatio: 0.2,
-                            children: [
-                              SlidableAction(
-                                onPressed: (_) => _deleteWord(word.id!),
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                icon: Icons.delete,
+                            Container(
+                                width: 3, color: AppColors.purpleDark),
+                            Expanded(
+                              child: Slidable(
+                                key: Key('word_${word.id}'),
+                                endActionPane: _isSelecting
+                                    ? null
+                                    : ActionPane(
+                                        motion: const DrawerMotion(),
+                                        extentRatio: 0.2,
+                                        children: [
+                                          SlidableAction(
+                                            onPressed: (_) =>
+                                                _deleteWord(word.id!),
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                            icon: Icons.delete,
+                                          ),
+                                        ],
+                                      ),
+                                child: ListTile(
+                                  leading: _isSelecting
+                                      ? Checkbox(
+                                          value: selected,
+                                          onChanged: (_) =>
+                                              _toggleSelection(word.id!),
+                                          activeColor: AppColors.purpleDark,
+                                        )
+                                      : null,
+                                  title: Text(word.english),
+                                  subtitle: Text(word.chinese),
+                                  trailing: _isSelecting
+                                      ? null
+                                      : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              _formatCreatedAt(word.createdAt),
+                                              style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons.volume_up_rounded,
+                                                  size: 18),
+                                              padding: EdgeInsets.zero,
+                                              constraints:
+                                                  const BoxConstraints(),
+                                              tooltip: '發音',
+                                              onPressed: () =>
+                                                  TtsService.instance
+                                                      .speak(word.english),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            proficiencyIcon(word.proficiency,
+                                                size: 22),
+                                          ],
+                                        ),
+                                  onLongPress: _isSelecting
+                                      ? null
+                                      : () => _enterSelectMode(word.id!),
+                                  onTap: _isSelecting
+                                      ? () => _toggleSelection(word.id!)
+                                      : () async {
+                                          await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  AddWordScreen(word: word),
+                                            ),
+                                          );
+                                          await _loadWords();
+                                        },
+                                ),
                               ),
-                            ],
-                          ),
-                          child: ListTile(
-                            title: Text(word.english),
-                            subtitle: Text(word.chinese),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _formatCreatedAt(word.createdAt),
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey),
-                                ),
-                                const SizedBox(width: 4),
-                                IconButton(
-                                  icon: const Icon(Icons.volume_up_rounded,
-                                      size: 18),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  tooltip: '發音',
-                                  onPressed: () =>
-                                      TtsService.instance.speak(word.english),
-                                ),
-                                const SizedBox(width: 4),
-                                proficiencyIcon(word.proficiency, size: 22),
-                              ],
                             ),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => AddWordScreen(word: word),
-                                ),
-                              );
-                              await _loadWords();
-                            },
-                          ),
-                        )),      // Slidable, Expanded
                           ],
-                        ),       // Row
-                      ),         // ClipRRect
-                    ),           // DecoratedBox
-                  );             // Padding
+                        ),
+                      ),
+                    ),
+                  );
                 },
               ),
       ),
-      floatingActionButton: GradientFAB(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AddWordScreen(wordBookId: widget.wordBook.id!),
+      bottomNavigationBar: _isSelecting
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.drive_file_move_outline),
+                  label: Text(
+                      '移動到其他單字書（${_selectedIds.length}）'),
+                  onPressed:
+                      _selectedIds.isEmpty ? null : _moveSelected,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.purpleDark,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                ),
+              ),
+            )
+          : null,
+      floatingActionButton: _isSelecting
+          ? null
+          : GradientFAB(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AddWordScreen(wordBookId: widget.wordBook.id!),
+                  ),
+                );
+                await _loadWords();
+              },
+              child: const Icon(Icons.add),
             ),
-          );
-          await _loadWords();
-        },
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
 import '../utils/proficiency_util.dart';
+import '../services/widget_service.dart';
 import 'add_word_screen.dart';
 import 'quiz_screen.dart';
 import 'settings_screen.dart';
@@ -38,12 +39,18 @@ class _WordBookListScreenState extends State<WordBookListScreen>
 
   late final TabController _tabController;
 
+  bool _isSelecting = false;
+  final Set<int> _selectedBookIds = {};
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) setState(() {});
+      if (!_tabController.indexIsChanging) {
+        if (_isSelecting) _exitSelectMode();
+        setState(() {});
+      }
     });
     _loadAll();
     _searchFocus.addListener(() {
@@ -199,6 +206,68 @@ class _WordBookListScreenState extends State<WordBookListScreen>
     await _loadAll();
   }
 
+  void _enterSelectMode(int bookId) {
+    setState(() {
+      _isSelecting = true;
+      _selectedBookIds.add(bookId);
+    });
+  }
+
+  void _exitSelectMode() {
+    setState(() {
+      _isSelecting = false;
+      _selectedBookIds.clear();
+    });
+  }
+
+  void _toggleBookSelection(int bookId) {
+    setState(() {
+      if (_selectedBookIds.contains(bookId)) {
+        _selectedBookIds.remove(bookId);
+      } else {
+        _selectedBookIds.add(bookId);
+      }
+    });
+  }
+
+  Future<void> _moveWordsFromSelected() async {
+    final books = await _db.getAllWordBooksWithCount();
+    // Target can be any book not in the selected set
+    final targets = books
+        .where((b) => !_selectedBookIds.contains(b.$1.id))
+        .toList();
+    if (!mounted) return;
+
+    final target = await showDialog<WordBook>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('移動到'),
+        children: targets.isEmpty
+            ? [const SimpleDialogOption(child: Text('沒有其他單字書'))]
+            : targets
+                .map((b) => SimpleDialogOption(
+                      onPressed: () => Navigator.pop(ctx, b.$1),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(b.$1.name),
+                      ),
+                    ))
+                .toList(),
+      ),
+    );
+
+    if (target == null || !mounted) return;
+    final count = _selectedBookIds.length;
+    await _db.moveWordsByBooks(_selectedBookIds.toList(), target.id!);
+    WidgetService.syncWords();
+    _exitSelectMode();
+    await _loadAll();
+    if (mounted) {
+      showSuccessSnackBar(
+          context, '已將 $count 本單字書的單字移動到「${target.name}」');
+    }
+  }
+
   Widget _wordTile(Word word, String bookName) {
     return ListTile(
       title: Text(word.english),
@@ -236,30 +305,55 @@ class _WordBookListScreenState extends State<WordBookListScreen>
   @override
   Widget build(BuildContext context) {
     final totalWordCount = _wordBooks.fold(0, (sum, e) => sum + e.$2);
+    final allSelected = _wordBooks.isNotEmpty &&
+        _wordBooks.every((b) => _selectedBookIds.contains(b.$1.id));
+
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          if (totalWordCount >= 3)
-            IconButton(
-              icon: const Icon(Icons.history_edu),
-              tooltip: '複習全部單字',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const QuizScreen()),
+      appBar: _isSelecting
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _exitSelectMode,
               ),
+              title: Text('已選 ${_selectedBookIds.length} 本'),
+              actions: [
+                TextButton(
+                  onPressed: () => setState(() {
+                    if (allSelected) {
+                      _selectedBookIds.clear();
+                    } else {
+                      _selectedBookIds
+                          .addAll(_wordBooks.map((b) => b.$1.id!));
+                    }
+                  }),
+                  child: Text(allSelected ? '取消全選' : '全選'),
+                ),
+              ],
+            )
+          : AppBar(
+              actions: [
+                if (totalWordCount >= 3)
+                  IconButton(
+                    icon: const Icon(Icons.history_edu),
+                    tooltip: '複習全部單字',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const QuizScreen()),
+                    ),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SettingsScreen()),
+                    );
+                    _loadAll();
+                  },
+                ),
+              ],
             ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
-              _loadAll();
-            },
-          ),
-        ],
-      ),
       body: DotGridBackground(
         child: Column(
           children: [
@@ -338,16 +432,25 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                           }
                           final (book, count, avgProficiency) =
                               _wordBooks[index];
+                          final selected =
+                              _selectedBookIds.contains(book.id);
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: AppColors.paper,
+                                color: selected
+                                    ? AppColors.purpleSoft
+                                    : AppColors.paper,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.line),
+                                border: Border.all(
+                                  color: selected
+                                      ? AppColors.purpleDark
+                                      : AppColors.line,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF2A2530).withValues(alpha: 0.06),
+                                    color: const Color(0xFF2A2530)
+                                        .withValues(alpha: 0.06),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -357,41 +460,60 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                                 borderRadius: BorderRadius.circular(12),
                                 child: Slidable(
                                   key: Key('book_${book.id}'),
-                                  endActionPane: book.isDefault
-                                      ? null
-                                      : ActionPane(
-                                          motion: const DrawerMotion(),
-                                          extentRatio: 0.2,
-                                          children: [
-                                            SlidableAction(
-                                              onPressed: (_) =>
-                                                  _deleteWordBook(book, count),
-                                              backgroundColor: Colors.red,
-                                              foregroundColor: Colors.white,
-                                              icon: Icons.delete,
+                                  endActionPane:
+                                      _isSelecting || book.isDefault
+                                          ? null
+                                          : ActionPane(
+                                              motion: const DrawerMotion(),
+                                              extentRatio: 0.2,
+                                              children: [
+                                                SlidableAction(
+                                                  onPressed: (_) =>
+                                                      _deleteWordBook(
+                                                          book, count),
+                                                  backgroundColor: Colors.red,
+                                                  foregroundColor:
+                                                      Colors.white,
+                                                  icon: Icons.delete,
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
                                   child: ListTile(
-                                    leading: const Icon(Icons.menu_book_rounded),
+                                    leading: _isSelecting
+                                        ? Checkbox(
+                                            value: selected,
+                                            onChanged: (_) =>
+                                                _toggleBookSelection(book.id!),
+                                            activeColor: AppColors.purpleDark,
+                                          )
+                                        : const Icon(Icons.menu_book_rounded),
                                     title: Text(book.name,
                                         style: const TextStyle(
                                             fontWeight: FontWeight.w600)),
                                     subtitle: Text('$count 個單字'),
-                                    trailing: count > 0
-                                        ? proficiencyIcon(avgProficiency,
-                                            size: 24)
-                                        : null,
-                                    onTap: () async {
-                                      await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              WordListScreen(wordBook: book),
-                                        ),
-                                      );
-                                      await _loadAll();
-                                    },
+                                    trailing: _isSelecting
+                                        ? null
+                                        : (count > 0
+                                            ? proficiencyIcon(avgProficiency,
+                                                size: 24)
+                                            : null),
+                                    onLongPress: _isSelecting
+                                        ? null
+                                        : () => _enterSelectMode(book.id!),
+                                    onTap: _isSelecting
+                                        ? () =>
+                                            _toggleBookSelection(book.id!)
+                                        : () async {
+                                            await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    WordListScreen(
+                                                        wordBook: book),
+                                              ),
+                                            );
+                                            await _loadAll();
+                                          },
                                   ),
                                 ),
                               ),
@@ -473,12 +595,30 @@ class _WordBookListScreenState extends State<WordBookListScreen>
           ],
         ),
       ),
-      floatingActionButton: _tabController.index == 0
-          ? GradientFAB(
-              onPressed: _addWordBook,
-              child: const Icon(Icons.add),
+      bottomNavigationBar: _isSelecting
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.drive_file_move_outline),
+                  label: Text(
+                      '移動所有單字到...（已選 ${_selectedBookIds.length} 本）'),
+                  onPressed:
+                      _selectedBookIds.isEmpty ? null : _moveWordsFromSelected,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.purpleDark,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                ),
+              ),
             )
           : null,
+      floatingActionButton: _isSelecting || _tabController.index != 0
+          ? null
+          : GradientFAB(
+              onPressed: _addWordBook,
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }
