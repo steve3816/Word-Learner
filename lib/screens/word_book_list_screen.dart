@@ -153,7 +153,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
             const SizedBox(height: 12),
             TextField(
               controller: descCtrl,
-              decoration: const InputDecoration(hintText: '描述（選填）'),
+              decoration: const InputDecoration(hintText: '描述'),
               maxLines: 2,
             ),
           ],
