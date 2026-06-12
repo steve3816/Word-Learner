@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/example_sentence.dart';
@@ -485,9 +484,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   Widget _buildViewMode() {
     final word = _currentWord!;
-    final levelLabel = proficiencyLevels
-        .firstWhere((l) => l.$1 == proficiencyToLevel(_proficiency))
-        .$2;
+    final currentLevel = ProficiencyLevel.fromScore(_proficiency);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -547,9 +544,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
                         color: AppColors.ink3,
                         fontWeight: FontWeight.w500)),
                 const Spacer(),
-                proficiencyIcon(_proficiency, size: 22),
+                Icon(currentLevel.icon, size: 22),
                 const SizedBox(width: 8),
-                Text(levelLabel,
+                Text(currentLevel.label,
                     style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.ink2,
@@ -820,10 +817,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: proficiencyLevels.map((level) {
-                    final isSelected = _proficiency == level.$1;
+                  children: ProficiencyLevel.values.map((level) {
+                    final isSelected = _proficiency == level.score;
                     return GestureDetector(
-                      onTap: () => setState(() => _proficiency = level.$1),
+                      onTap: () => setState(() => _proficiency = level.score),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
@@ -838,10 +835,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
                         ),
                         child: Column(
                           children: [
-                            SvgPicture.asset(proficiencyAsset(level.$1),
-                                width: 32, height: 32),
+                            Icon(level.icon, size: 32),
                             const SizedBox(height: 4),
-                            Text(level.$2,
+                            Text(level.label,
                                 style: const TextStyle(fontSize: 11)),
                           ],
                         ),

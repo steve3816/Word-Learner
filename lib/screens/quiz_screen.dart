@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
@@ -294,10 +293,10 @@ class _QuizScreenState extends State<QuizScreen> {
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: proficiencyLevels.map((level) {
-                      final isSelected = proficiencyToLevel(_pendingProficiency!) == level.$1;
+                    children: ProficiencyLevel.values.map((level) {
+                      final isSelected = ProficiencyLevel.fromScore(_pendingProficiency!) == level;
                       return GestureDetector(
-                        onTap: () => setState(() => _pendingProficiency = level.$1),
+                        onTap: () => setState(() => _pendingProficiency = level.score),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
@@ -311,13 +310,9 @@ class _QuizScreenState extends State<QuizScreen> {
                           ),
                           child: Column(
                             children: [
-                              SvgPicture.asset(
-                                proficiencyAsset(level.$1),
-                                width: 28,
-                                height: 28,
-                              ),
+                              Icon(level.icon, size: 28),
                               const SizedBox(height: 4),
-                              Text(level.$2, style: const TextStyle(fontSize: 10)),
+                              Text(level.label, style: const TextStyle(fontSize: 10)),
                             ],
                           ),
                         ),

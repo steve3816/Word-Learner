@@ -1,32 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
-const List<(int, String)> proficiencyLevels = [
-  (0, '非常不熟'),
-  (33, '有點不熟'),
-  (66, '普通'),
-  (100, '很熟練'),
-];
+enum ProficiencyLevel {
+  veryUnfamiliar(score: 0,   label: '非常不熟', icon: Icons.sentiment_very_dissatisfied_outlined),
+  unfamiliar    (score: 33,  label: '有點不熟', icon: Icons.sentiment_dissatisfied_outlined),
+  neutral       (score: 66,  label: '普通',     icon: Icons.sentiment_neutral_outlined),
+  proficient    (score: 100, label: '很熟練',   icon: Icons.emoji_emotions_outlined);
 
-String proficiencyAsset(int proficiency) {
-  if (proficiency >= 100) return 'assets/icons/emoji_laugh.svg';
-  if (proficiency >= 66) return 'assets/icons/smile.svg';
-  if (proficiency >= 33) return 'assets/icons/smiley-meh.svg';
-  return 'assets/icons/smiley-sad.svg';
+  const ProficiencyLevel({
+    required this.score,
+    required this.label,
+    required this.icon,
+  });
+
+  final int score;
+  final String label;
+  final IconData icon;
+
+  static ProficiencyLevel fromScore(int score) {
+    if (score >= proficient.score) return ProficiencyLevel.proficient;
+    if (score >= neutral.score)  return ProficiencyLevel.neutral;
+    if (score >= unfamiliar.score)  return ProficiencyLevel.unfamiliar;
+    return ProficiencyLevel.veryUnfamiliar;
+  }
+
 }
 
-// Maps any 0-100 value to the nearest level value for button highlight
-int proficiencyToLevel(int proficiency) {
-  if (proficiency >= 100) return 100;
-  if (proficiency >= 66) return 66;
-  if (proficiency >= 33) return 33;
-  return 0;
-}
-
-Widget proficiencyIcon(int proficiency, {double size = 24}) {
-  return SvgPicture.asset(
-    proficiencyAsset(proficiency),
-    width: size,
-    height: size,
-  );
-}
+Widget proficiencyIcon(int score, {double size = 24}) =>
+    Icon(ProficiencyLevel.fromScore(score).icon, size: size);
