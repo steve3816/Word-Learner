@@ -847,7 +847,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 TextField(
                   controller: _notesCtrl,
                   decoration: const InputDecoration(labelText: '備注'),
-                  minLines: 3,
+                  minLines: 1,
                   maxLines: null,
                 ),
                 const SizedBox(height: 16),
