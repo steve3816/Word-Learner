@@ -405,6 +405,41 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   // ── View mode ────────────────────────────────────────────────
 
+  Widget _sectionCard({required Widget child}) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.line),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2A2530).withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: child,
+      );
+
+  Widget _buildExampleView(ExampleSentence ex) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: Text(ex.sentence, style: const TextStyle(fontSize: 14))),
+              const SizedBox(width: 6),
+              _speakerBtn(ex.sentence),
+            ],
+          ),
+          if (ex.chineseTranslation?.isNotEmpty == true) ...[
+            const SizedBox(height: 4),
+            Text(ex.chineseTranslation!,
+                style: const TextStyle(fontSize: 13, color: AppColors.ink3)),
+          ],
+        ],
+      );
+
   Widget _buildViewMode() {
     final word = _currentWord!;
     final levelLabel = proficiencyLevels
@@ -412,23 +447,30 @@ class _AddWordScreenState extends State<AddWordScreen> {
         .$2;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
+        // ── Header ───────────────────────────────────────────────
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Text(
-                word.english,
-                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(word.english,
+                      style: const TextStyle(
+                          fontSize: 28, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text(word.chinese,
+                      style: const TextStyle(
+                          fontSize: 18, color: AppColors.ink2)),
+                ],
               ),
             ),
             const SizedBox(width: 8),
             _speakerBtn(word.english),
           ],
         ),
-        const SizedBox(height: 8),
-        Text(word.chinese, style: const TextStyle(fontSize: 18, color: AppColors.ink2)),
         if (word.englishExplanation?.isNotEmpty == true) ...[
           const SizedBox(height: 10),
           Row(
@@ -437,7 +479,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
               Expanded(
                 child: Text(
                   word.englishExplanation!,
-                  style: const TextStyle(fontSize: 14, color: AppColors.ink3, fontStyle: FontStyle.italic),
+                  style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.ink3,
+                      fontStyle: FontStyle.italic),
                 ),
               ),
               const SizedBox(width: 6),
@@ -445,72 +490,91 @@ class _AddWordScreenState extends State<AddWordScreen> {
             ],
           ),
         ],
-        const SizedBox(height: 16),
-        const Divider(),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Text('熟練度', style: TextStyle(fontSize: 14, color: AppColors.ink3)),
-            const SizedBox(width: 8),
-            proficiencyIcon(_proficiency, size: 22),
-            const SizedBox(width: 6),
-            Text(levelLabel, style: const TextStyle(fontSize: 14, color: AppColors.ink2)),
-          ],
-        ),
-        if (word.examples.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          const Divider(),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            title: Text('例句（${word.examples.length}）',
-                style: const TextStyle(fontWeight: FontWeight.w500)),
-            initiallyExpanded: false,
-            children: [
-              for (final ex in word.examples)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(ex.sentence,
-                                style: const TextStyle(fontSize: 14)),
-                          ),
-                          const SizedBox(width: 6),
-                          _speakerBtn(ex.sentence),
-                        ],
-                      ),
-                      if (ex.chineseTranslation?.isNotEmpty == true) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          ex.chineseTranslation!,
-                          style: const TextStyle(fontSize: 13, color: AppColors.ink3),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-            ],
+        const SizedBox(height: 20),
+
+        // ── Proficiency ───────────────────────────────────────────
+        _sectionCard(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                const Text('熟練度',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.ink3,
+                        fontWeight: FontWeight.w500)),
+                const Spacer(),
+                proficiencyIcon(_proficiency, size: 22),
+                const SizedBox(width: 8),
+                Text(levelLabel,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.ink2,
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
           ),
-        ],
-        if (word.notes?.isNotEmpty == true) ...[
-          const Divider(),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            title: const Text('備注', style: TextStyle(fontWeight: FontWeight.w500)),
-            initiallyExpanded: false,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
+        ),
+
+        // ── Examples ─────────────────────────────────────────────
+        if (word.examples.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: _sectionCard(
+              child: Theme(
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  childrenPadding:
+                      const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  title: Text('例句（${word.examples.length}）',
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500)),
+                  initiallyExpanded: false,
+                  children: [
+                    for (int i = 0; i < word.examples.length; i++) ...[
+                      if (i > 0)
+                        const Divider(height: 20, thickness: 0.5),
+                      _buildExampleView(word.examples[i]),
+                    ],
+                  ],
                 ),
               ),
-            ],
+            ),
+          ),
+        ],
+
+        // ── Notes ────────────────────────────────────────────────
+        if (word.notes?.isNotEmpty == true) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: _sectionCard(
+              child: Theme(
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  childrenPadding:
+                      const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  title: const Text('備注',
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500)),
+                  initiallyExpanded: false,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(word.notes!,
+                          style: const TextStyle(fontSize: 14)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ],
