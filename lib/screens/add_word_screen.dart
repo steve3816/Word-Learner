@@ -421,13 +421,32 @@ class _AddWordScreenState extends State<AddWordScreen> {
         child: child,
       );
 
+  Widget _highlightWord(String sentence, String word) {
+    const base = TextStyle(fontSize: 14);
+    final lower = sentence.toLowerCase();
+    final target = word.toLowerCase();
+    final spans = <TextSpan>[];
+    int start = 0;
+    int idx;
+    while ((idx = lower.indexOf(target, start)) != -1) {
+      if (idx > start) spans.add(TextSpan(text: sentence.substring(start, idx), style: base));
+      spans.add(TextSpan(
+        text: sentence.substring(idx, idx + word.length),
+        style: base.copyWith(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
+      ));
+      start = idx + word.length;
+    }
+    if (start < sentence.length) spans.add(TextSpan(text: sentence.substring(start), style: base));
+    return RichText(text: TextSpan(style: const TextStyle(color: AppColors.ink), children: spans));
+  }
+
   Widget _buildExampleView(ExampleSentence ex) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: Text(ex.sentence, style: const TextStyle(fontSize: 14))),
+              Expanded(child: _highlightWord(ex.sentence, _currentWord!.english)),
               const SizedBox(width: 6),
               _speakerBtn(ex.sentence),
             ],
