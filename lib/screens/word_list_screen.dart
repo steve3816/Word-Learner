@@ -283,9 +283,34 @@ class _WordListScreenState extends State<WordListScreen> {
                     }
                   },
                   itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'sort', child: Text('排序')),
-                    PopupMenuItem(value: 'settings', child: Text('單字書設定')),
-                    PopupMenuItem(value: 'export', child: Text('匯出此單字書')),
+                    PopupMenuItem(
+                      value: 'settings',
+                      child: ListTile(
+                        leading: Icon(Icons.settings_outlined),
+                        title: Text('單字書設定'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'sort',
+                      child: ListTile(
+                        leading: Icon(Icons.sort),
+                        title: Text('排序'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+
+                    PopupMenuItem(
+                      value: 'export',
+                      child: ListTile(
+                        leading: Icon(Icons.upload_file_outlined),
+                        title: Text('匯出此單字書'),
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
                   ],
                 ),
               ],
