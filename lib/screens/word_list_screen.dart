@@ -20,10 +20,13 @@ class WordListScreen extends StatefulWidget {
   State<WordListScreen> createState() => _WordListScreenState();
 }
 
+enum _WordSort { newestFirst, oldestFirst, alpha }
+
 class _WordListScreenState extends State<WordListScreen> {
   final _db = DbHelper();
   List<Word> _words = [];
   late WordBook _wordBook;
+  _WordSort _sortOrder = _WordSort.newestFirst;
 
   bool _isSelecting = false;
   final Set<int> _selectedIds = {};
@@ -37,7 +40,68 @@ class _WordListScreenState extends State<WordListScreen> {
 
   Future<void> _loadWords() async {
     final words = await _db.getWordsByWordBook(widget.wordBook.id!);
-    setState(() => _words = words);
+    setState(() {
+      _words = _sorted(words);
+    });
+  }
+
+  List<Word> _sorted(List<Word> words) {
+    final list = List<Word>.from(words);
+    switch (_sortOrder) {
+      case _WordSort.newestFirst:
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case _WordSort.oldestFirst:
+        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      case _WordSort.alpha:
+        list.sort((a, b) => a.english.toLowerCase().compareTo(b.english.toLowerCase()));
+    }
+    return list;
+  }
+
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('排序方式'),
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          content: RadioGroup<_WordSort>(
+            groupValue: _sortOrder,
+            onChanged: (v) => setDialogState(() => _sortOrder = v!),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<_WordSort>(
+                  title: Text('字母 A–Z'),
+                  value: _WordSort.alpha,
+                ),
+                RadioListTile<_WordSort>(
+                  title: Text('新增時間：新到舊'),
+                  value: _WordSort.newestFirst,
+                ),
+                RadioListTile<_WordSort>(
+                  title: Text('新增時間：舊到新'),
+                  value: _WordSort.oldestFirst,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() => _words = _sorted(_words));
+                Navigator.pop(ctx);
+              },
+              child: const Text('確認'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteWord(int id) async {
@@ -214,9 +278,12 @@ class _WordListScreenState extends State<WordListScreen> {
                       _editWordBook();
                     } else if (value == 'export') {
                       _exportWordBook();
+                    } else if (value == 'sort') {
+                      _showSortDialog();
                     }
                   },
                   itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'sort', child: Text('排序')),
                     PopupMenuItem(value: 'settings', child: Text('單字書設定')),
                     PopupMenuItem(value: 'export', child: Text('匯出此單字書')),
                   ],
