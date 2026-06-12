@@ -66,12 +66,16 @@ class _AddWordScreenState extends State<AddWordScreen> {
   late bool _isEditing;
   Word? _currentWord;
 
+  List<Word>? _wordList;
+  int _wordIndex = 0;
+
   @override
   void initState() {
     super.initState();
     _isEditing = widget.word == null;
     _currentWord = widget.word;
     _proficiency = widget.word?.proficiency ?? 0;
+    if (widget.word != null) _loadWordList();
     _englishCtrl = TextEditingController(text: widget.word?.english ?? '');
     _chineseCtrl = TextEditingController(text: widget.word?.chinese ?? '');
     _explanationCtrl = TextEditingController(text: widget.word?.englishExplanation ?? '');
@@ -97,6 +101,26 @@ class _AddWordScreenState extends State<AddWordScreen> {
       e.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _loadWordList() async {
+    final words = await _db.getWordsByWordBook(_currentWord!.wordBookId);
+    final idx = words.indexWhere((w) => w.id == _currentWord!.id);
+    if (mounted) {
+      setState(() {
+        _wordList = words;
+        _wordIndex = idx == -1 ? 0 : idx;
+      });
+    }
+  }
+
+  void _navigateTo(int index) {
+    final word = _wordList![index];
+    setState(() {
+      _currentWord = word;
+      _proficiency = word.proficiency;
+      _wordIndex = index;
+    });
   }
 
   Future<void> _loadSettings() async {
@@ -896,11 +920,47 @@ class _AddWordScreenState extends State<AddWordScreen> {
       appBar = AppBar(title: const Text('新增單字'));
     }
 
+    final hasList = !_isEditing && _wordList != null && _wordList!.length > 1;
+    final hasPrev = hasList && _wordIndex > 0;
+    final hasNext = hasList && _wordIndex < _wordList!.length - 1;
+
     return Scaffold(
       appBar: appBar,
       body: DotGridBackground(
         child: _isEditing ? _buildEditMode() : _buildViewMode(),
       ),
+      bottomNavigationBar: hasList
+          ? SafeArea(
+              child: SizedBox(
+                height: 56,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Text(
+                      '${_wordIndex + 1} / ${_wordList!.length}',
+                      style: const TextStyle(fontSize: 13, color: AppColors.ink3),
+                    ),
+                    if (hasPrev)
+                      Align(
+                        alignment: const Alignment(-0.5, 0),
+                        child: IconButton(
+                          icon: const Icon(Icons.chevron_left),
+                          onPressed: () => _navigateTo(_wordIndex - 1),
+                        ),
+                      ),
+                    if (hasNext)
+                      Align(
+                        alignment: const Alignment(0.5, 0),
+                        child: IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          onPressed: () => _navigateTo(_wordIndex + 1),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
