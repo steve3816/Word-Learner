@@ -10,6 +10,7 @@ class Word {
   final DateTime createdAt;
   final int wordBookId;
   final int proficiency;
+  final String? notes;
 
   const Word({
     this.id,
@@ -20,9 +21,9 @@ class Word {
     required this.createdAt,
     required this.wordBookId,
     this.proficiency = 0,
+    this.notes,
   });
 
-  // For quiz screen compatibility
   String? get exampleSentence => examples.isEmpty ? null : examples.first.sentence;
 
   Map<String, dynamic> toMap() => {
@@ -36,6 +37,7 @@ class Word {
         'created_at': createdAt.millisecondsSinceEpoch,
         'word_book_id': wordBookId,
         'proficiency': proficiency,
+        'notes': notes,
       };
 
   factory Word.fromMap(Map<String, dynamic> map) {
@@ -47,7 +49,6 @@ class Word {
           .map((e) => ExampleSentence.fromMap(e as Map<String, dynamic>))
           .toList();
     } else {
-      // Backward compat: migrate old single example_sentence field
       final oldSentence = map['example_sentence'] as String?;
       if (oldSentence != null && oldSentence.isNotEmpty) {
         examples = [ExampleSentence(sentence: oldSentence)];
@@ -62,6 +63,7 @@ class Word {
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
       wordBookId: map['word_book_id'] as int? ?? 1,
       proficiency: map['proficiency'] as int? ?? 0,
+      notes: map['notes'] as String?,
     );
   }
 
@@ -73,6 +75,7 @@ class Word {
     List<ExampleSentence>? examples,
     int? wordBookId,
     int? proficiency,
+    String? notes,
   }) =>
       Word(
         id: id ?? this.id,
@@ -83,5 +86,6 @@ class Word {
         createdAt: createdAt,
         wordBookId: wordBookId ?? this.wordBookId,
         proficiency: proficiency ?? this.proficiency,
+        notes: notes ?? this.notes,
       );
 }

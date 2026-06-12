@@ -109,6 +109,7 @@ class ExportService {
           english: w['english'] as String,
           chinese: w['chinese'] as String,
           englishExplanation: w['englishExplanation'] as String?,
+          notes: w['notes'] as String?,
           examples: examples,
           proficiency: 0,
           createdAt: DateTime.now(),
@@ -132,6 +133,7 @@ class ExportService {
                   'chinese': w.chinese,
                   if (w.englishExplanation != null)
                     'englishExplanation': w.englishExplanation,
+                  if (w.notes != null) 'notes': w.notes,
                   'examples': w.examples
                       .map((e) => {
                             'sentence': e.sentence,

@@ -10,8 +10,6 @@ import '../services/tts_service.dart';
 import '../services/widget_service.dart';
 import '../utils/proficiency_util.dart';
 
-// Appended to the user's example prompt to enforce JSON response format.
-// Not user-editable — required for parsing sentence + translation.
 const _exampleFormatSuffix =
     ' Also provide its Traditional Chinese translation. '
     'Return a JSON object with exactly two fields: "sentence" (the English example) '
@@ -56,24 +54,26 @@ class _AddWordScreenState extends State<AddWordScreen> {
   late final TextEditingController _englishCtrl;
   late final TextEditingController _chineseCtrl;
   late final TextEditingController _explanationCtrl;
+  late final TextEditingController _notesCtrl;
   final List<_ExampleEntry> _examples = [];
 
   AiService? _aiService;
-  // Prompts loaded from settings, keyed by field name
   final Map<String, String> _prompts = {};
   bool _loadingEnglish = false;
   bool _loadingChinese = false;
   bool _loadingExplanation = false;
   late int _proficiency;
+  late bool _isEditing;
 
   @override
   void initState() {
     super.initState();
+    _isEditing = widget.word == null;
     _proficiency = widget.word?.proficiency ?? 0;
     _englishCtrl = TextEditingController(text: widget.word?.english ?? '');
     _chineseCtrl = TextEditingController(text: widget.word?.chinese ?? '');
-    _explanationCtrl =
-        TextEditingController(text: widget.word?.englishExplanation ?? '');
+    _explanationCtrl = TextEditingController(text: widget.word?.englishExplanation ?? '');
+    _notesCtrl = TextEditingController(text: widget.word?.notes ?? '');
     if (widget.word != null) {
       for (final ex in widget.word!.examples) {
         _examples.add(_ExampleEntry(
@@ -90,6 +90,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     _englishCtrl.dispose();
     _chineseCtrl.dispose();
     _explanationCtrl.dispose();
+    _notesCtrl.dispose();
     for (final e in _examples) {
       e.dispose();
     }
@@ -111,8 +112,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
   }
 
   String _buildPrompt(String field) {
-    final base =
-        (_prompts[field] ?? '').replaceAll(SettingsService.wordPlaceholder, _englishCtrl.text.trim());
+    final base = (_prompts[field] ?? '')
+        .replaceAll(SettingsService.wordPlaceholder, _englishCtrl.text.trim());
     return field == 'example' ? '$base$_exampleFormatSuffix' : base;
   }
 
@@ -126,10 +127,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
         title: const Text('AI 回應失敗'),
         content: Text(message),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('關閉'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('關閉')),
         ],
       ),
     );
@@ -202,8 +200,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     setState(() => entry.loadingTranslation = true);
     try {
       final sentence = entry.sentenceCtrl.text.trim();
-      final prompt =
-          '將以下英文例句翻譯成繁體中文：「$sentence」。只回傳中文翻譯，不要任何解釋。';
+      final prompt = '將以下英文例句翻譯成繁體中文：「$sentence」。只回傳中文翻譯，不要任何解釋。';
       final result = await _aiService!.complete(prompt);
       entry.translationCtrl.text = result.trim();
     } catch (e) {
@@ -228,14 +225,33 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
-  void _addExample() {
-    setState(() => _examples.add(_ExampleEntry()));
-  }
+  void _addExample() => setState(() => _examples.add(_ExampleEntry()));
 
   void _removeExample(int index) {
     setState(() {
       _examples[index].dispose();
       _examples.removeAt(index);
+    });
+  }
+
+  void _cancelEdit() {
+    _englishCtrl.text = widget.word!.english;
+    _chineseCtrl.text = widget.word!.chinese;
+    _explanationCtrl.text = widget.word!.englishExplanation ?? '';
+    _notesCtrl.text = widget.word!.notes ?? '';
+    for (final e in _examples) {
+      e.dispose();
+    }
+    _examples.clear();
+    for (final ex in widget.word!.examples) {
+      _examples.add(_ExampleEntry(
+        sentence: ex.sentence,
+        translation: ex.chineseTranslation ?? '',
+      ));
+    }
+    setState(() {
+      _proficiency = widget.word!.proficiency;
+      _isEditing = false;
     });
   }
 
@@ -260,10 +276,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
             '例句 ${invalidIndices.join('、')} 未包含英文單字「$english」，請修正後再儲存。',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('確認'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('確認')),
           ],
         ),
       );
@@ -282,7 +295,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
     final word = Word(
       id: widget.word?.id,
-      english: _englishCtrl.text.trim(),
+      english: english,
       chinese: _chineseCtrl.text.trim(),
       englishExplanation: _explanationCtrl.text.trim().isEmpty
           ? null
@@ -291,6 +304,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       createdAt: widget.word?.createdAt ?? DateTime.now(),
       wordBookId: widget.word?.wordBookId ?? widget.wordBookId!,
       proficiency: _proficiency,
+      notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
     );
     try {
       if (widget.word == null) {
@@ -301,11 +315,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
       WidgetService.syncWords();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        showErrorSnackBar(context, '儲存失敗：$e');
-      }
+      if (mounted) showErrorSnackBar(context, '儲存失敗：$e');
     }
   }
+
+  // ── Shared helpers ──────────────────────────────────────────
 
   Widget _speakerBtn(String text) => Material(
         color: AppColors.cream2,
@@ -321,7 +335,6 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ),
       );
 
-  // Wraps a field in a Stack so the speaker btn appears at bottom-right.
   Widget _withSpeaker(Widget field, TextEditingController ctrl) {
     return Stack(
       children: [
@@ -362,8 +375,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
   Widget _aiButton({required bool loading, required VoidCallback onPressed}) {
     if (loading) {
       return const SizedBox(
-        width: 48,
-        height: 48,
+        width: 48, height: 48,
         child: Padding(
           padding: EdgeInsets.all(12),
           child: CircularProgressIndicator(strokeWidth: 2),
@@ -371,8 +383,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       );
     }
     return SizedBox(
-      width: 48,
-      height: 48,
+      width: 48, height: 48,
       child: Tooltip(
         message: 'AI 產生',
         child: DecoratedBox(
@@ -400,6 +411,113 @@ class _AddWordScreenState extends State<AddWordScreen> {
     );
   }
 
+  // ── View mode ────────────────────────────────────────────────
+
+  Widget _buildViewMode() {
+    final word = widget.word!;
+    final levelLabel = proficiencyLevels
+        .firstWhere((l) => l.$1 == proficiencyToLevel(_proficiency))
+        .$2;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                word.english,
+                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _speakerBtn(word.english),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(word.chinese, style: const TextStyle(fontSize: 18, color: AppColors.ink2)),
+        if (word.englishExplanation?.isNotEmpty == true) ...[
+          const SizedBox(height: 10),
+          Text(
+            word.englishExplanation!,
+            style: const TextStyle(fontSize: 14, color: AppColors.ink3, fontStyle: FontStyle.italic),
+          ),
+        ],
+        const SizedBox(height: 16),
+        const Divider(),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            const Text('熟練度', style: TextStyle(fontSize: 14, color: AppColors.ink3)),
+            const SizedBox(width: 8),
+            proficiencyIcon(_proficiency, size: 22),
+            const SizedBox(width: 6),
+            Text(levelLabel, style: const TextStyle(fontSize: 14, color: AppColors.ink2)),
+          ],
+        ),
+        if (word.examples.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          const Divider(),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text('例句（${word.examples.length}）',
+                style: const TextStyle(fontWeight: FontWeight.w500)),
+            initiallyExpanded: false,
+            children: [
+              for (final ex in word.examples)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(ex.sentence,
+                                style: const TextStyle(fontSize: 14)),
+                          ),
+                          const SizedBox(width: 6),
+                          _speakerBtn(ex.sentence),
+                        ],
+                      ),
+                      if (ex.chineseTranslation?.isNotEmpty == true) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          ex.chineseTranslation!,
+                          style: const TextStyle(fontSize: 13, color: AppColors.ink3),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
+        if (word.notes?.isNotEmpty == true) ...[
+          const Divider(),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: const Text('備注', style: TextStyle(fontWeight: FontWeight.w500)),
+            initiallyExpanded: false,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Edit mode ────────────────────────────────────────────────
+
   Widget _buildExampleEntry(int index) {
     final entry = _examples[index];
     return Card(
@@ -411,10 +529,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
           children: [
             Row(
               children: [
-                Text(
-                  '例句 ${index + 1}',
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                ),
+                Text('例句 ${index + 1}',
+                    style: const TextStyle(fontSize: 13, color: Colors.grey)),
                 const Spacer(),
                 if (_aiService != null)
                   ValueListenableBuilder<TextEditingValue>(
@@ -504,182 +620,210 @@ class _AddWordScreenState extends State<AddWordScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.word == null ? '新增單字' : '編輯單字'),
-      ),
-      body: DotGridBackground(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
+  Widget _buildEditMode() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: _withSpeaker(
-                            TextFormField(
-                              controller: _englishCtrl,
-                              decoration: const InputDecoration(
-                                labelText: '英文單字 *',
-                                contentPadding: EdgeInsets.fromLTRB(14, 14, 42, 14),
+                    Expanded(
+                      child: _withSpeaker(
+                        TextFormField(
+                          controller: _englishCtrl,
+                          decoration: const InputDecoration(
+                            labelText: '英文單字 *',
+                            contentPadding: EdgeInsets.fromLTRB(14, 14, 42, 14),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? '請輸入英文單字'
+                              : null,
+                        ),
+                        _englishCtrl,
+                      ),
+                    ),
+                    if (_aiService != null) ...[
+                      const SizedBox(width: 6),
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _chineseCtrl,
+                        builder: (_, value, _) => value.text.trim().isEmpty
+                            ? const SizedBox.shrink()
+                            : _aiIconBtn(
+                                loading: _loadingEnglish,
+                                onPressed: _generateEnglish,
                               ),
-                              validator: (v) => (v == null || v.trim().isEmpty)
-                                  ? '請輸入英文單字'
-                                  : null,
-                            ),
-                            _englishCtrl,
-                          ),
-                        ),
-                        if (_aiService != null) ...[
-                          const SizedBox(width: 6),
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _chineseCtrl,
-                            builder: (_, value, _) => value.text.trim().isEmpty
-                                ? const SizedBox.shrink()
-                                : _aiIconBtn(
-                                    loading: _loadingEnglish,
-                                    onPressed: _generateEnglish,
-                                  ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _chineseCtrl,
-                            decoration: const InputDecoration(labelText: '中文意思 *'),
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? '請輸入中文意思'
-                                : null,
-                          ),
-                        ),
-                        if (_aiService != null) ...[
-                          const SizedBox(width: 6),
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _englishCtrl,
-                            builder: (_, value, _) => value.text.trim().isEmpty
-                                ? const SizedBox.shrink()
-                                : _aiIconBtn(
-                                    loading: _loadingChinese,
-                                    onPressed: _generateChinese,
-                                  ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _explanationCtrl,
-                            decoration: const InputDecoration(labelText: '英文解釋（選填）'),
-                            minLines: 2,
-                            maxLines: null,
-                          ),
-                        ),
-                        if (_aiService != null) ...[
-                          const SizedBox(width: 6),
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _englishCtrl,
-                            builder: (_, value, _) => value.text.trim().isEmpty
-                                ? const SizedBox.shrink()
-                                : _aiIconBtn(
-                                    loading: _loadingExplanation,
-                                    onPressed: _generateExplanation,
-                                  ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      '熟練度',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: proficiencyLevels.map((level) {
-                        final isSelected = _proficiency == level.$1;
-                        return GestureDetector(
-                          onTap: () => setState(() => _proficiency = level.$1),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Colors.transparent,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              children: [
-                                SvgPicture.asset(
-                                  proficiencyAsset(level.$1),
-                                  width: 32,
-                                  height: 32,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  level.$2,
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        const Text(
-                          '例句',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w500),
-                        ),
-                        const Spacer(),
-                        TextButton.icon(
-                          onPressed: _addExample,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('新增例句'),
-                        ),
-                      ],
-                    ),
-                    for (int i = 0; i < _examples.length; i++) ...[
-                      const SizedBox(height: 8),
-                      _buildExampleEntry(i),
+                      ),
                     ],
-                    const SizedBox(height: 16),
                   ],
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: GradientButton(
-                  onPressed: _save,
-                  child: Text(widget.word == null ? '新增' : '儲存'),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _chineseCtrl,
+                        decoration: const InputDecoration(labelText: '中文意思 *'),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? '請輸入中文意思'
+                            : null,
+                      ),
+                    ),
+                    if (_aiService != null) ...[
+                      const SizedBox(width: 6),
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _englishCtrl,
+                        builder: (_, value, _) => value.text.trim().isEmpty
+                            ? const SizedBox.shrink()
+                            : _aiIconBtn(
+                                loading: _loadingChinese,
+                                onPressed: _generateChinese,
+                              ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _explanationCtrl,
+                        decoration: const InputDecoration(labelText: '英文解釋（選填）'),
+                        minLines: 2,
+                        maxLines: null,
+                      ),
+                    ),
+                    if (_aiService != null) ...[
+                      const SizedBox(width: 6),
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _englishCtrl,
+                        builder: (_, value, _) => value.text.trim().isEmpty
+                            ? const SizedBox.shrink()
+                            : _aiIconBtn(
+                                loading: _loadingExplanation,
+                                onPressed: _generateExplanation,
+                              ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text('熟練度',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: proficiencyLevels.map((level) {
+                    final isSelected = _proficiency == level.$1;
+                    return GestureDetector(
+                      onTap: () => setState(() => _proficiency = level.$1),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            SvgPicture.asset(proficiencyAsset(level.$1),
+                                width: 32, height: 32),
+                            const SizedBox(height: 4),
+                            Text(level.$2,
+                                style: const TextStyle(fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Text('例句',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500)),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: _addExample,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('新增例句'),
+                    ),
+                  ],
+                ),
+                for (int i = 0; i < _examples.length; i++) ...[
+                  const SizedBox(height: 8),
+                  _buildExampleEntry(i),
+                ],
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _notesCtrl,
+                  decoration: const InputDecoration(labelText: '備注'),
+                  minLines: 3,
+                  maxLines: null,
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: GradientButton(
+              onPressed: _save,
+              child: Text(widget.word == null ? '新增' : '儲存'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Build ────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    final AppBar appBar;
+    if (!_isEditing) {
+      appBar = AppBar(
+        title: Text(widget.word!.english),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: '編輯',
+            onPressed: () => setState(() => _isEditing = true),
+          ),
+        ],
+      );
+    } else if (widget.word != null) {
+      appBar = AppBar(
+        title: const Text('編輯單字'),
+        actions: [
+          TextButton(
+            onPressed: _cancelEdit,
+            child: const Text('取消'),
+          ),
+        ],
+      );
+    } else {
+      appBar = AppBar(title: const Text('新增單字'));
+    }
+
+    return Scaffold(
+      appBar: appBar,
+      body: DotGridBackground(
+        child: _isEditing ? _buildEditMode() : _buildViewMode(),
       ),
     );
   }

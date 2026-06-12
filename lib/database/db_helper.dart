@@ -20,7 +20,7 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE word_books(
@@ -45,7 +45,8 @@ class DbHelper {
             examples_json TEXT,
             created_at INTEGER NOT NULL,
             word_book_id INTEGER NOT NULL,
-            proficiency INTEGER NOT NULL DEFAULT 0
+            proficiency INTEGER NOT NULL DEFAULT 0,
+            notes TEXT
           )
         ''');
       },
@@ -117,6 +118,9 @@ class DbHelper {
         }
         if (oldVersion < 6) {
           await db.execute('ALTER TABLE word_books ADD COLUMN description TEXT');
+        }
+        if (oldVersion < 7) {
+          await db.execute('ALTER TABLE words ADD COLUMN notes TEXT');
         }
       },
     );
