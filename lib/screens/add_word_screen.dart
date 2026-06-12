@@ -335,24 +335,6 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ),
       );
 
-  Widget _withSpeaker(Widget field, TextEditingController ctrl) {
-    return Stack(
-      children: [
-        field,
-        Positioned(
-          right: 8,
-          bottom: 8,
-          child: ValueListenableBuilder<TextEditingValue>(
-            valueListenable: ctrl,
-            builder: (_, value, _) => value.text.trim().isEmpty
-                ? const SizedBox.shrink()
-                : _speakerBtn(value.text.trim()),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _aiIconBtn({required bool loading, required VoidCallback onPressed}) {
     if (loading) {
       return const Padding(
@@ -439,9 +421,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
         Text(word.chinese, style: const TextStyle(fontSize: 18, color: AppColors.ink2)),
         if (word.englishExplanation?.isNotEmpty == true) ...[
           const SizedBox(height: 10),
-          Text(
-            word.englishExplanation!,
-            style: const TextStyle(fontSize: 14, color: AppColors.ink3, fontStyle: FontStyle.italic),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  word.englishExplanation!,
+                  style: const TextStyle(fontSize: 14, color: AppColors.ink3, fontStyle: FontStyle.italic),
+                ),
+              ),
+              const SizedBox(width: 6),
+              _speakerBtn(word.englishExplanation!),
+            ],
           ),
         ],
         const SizedBox(height: 16),
@@ -557,18 +548,14 @@ class _AddWordScreenState extends State<AddWordScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _withSpeaker(
-                    TextField(
-                      controller: entry.sentenceCtrl,
-                      decoration: const InputDecoration(
-                        labelText: '英文例句',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.fromLTRB(14, 14, 42, 14),
-                      ),
-                      minLines: 2,
-                      maxLines: null,
+                  child: TextField(
+                    controller: entry.sentenceCtrl,
+                    decoration: const InputDecoration(
+                      labelText: '英文例句',
+                      border: OutlineInputBorder(),
                     ),
-                    entry.sentenceCtrl,
+                    minLines: 2,
+                    maxLines: null,
                   ),
                 ),
                 if (_aiService != null) ...[
@@ -633,18 +620,14 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: _withSpeaker(
-                        TextFormField(
-                          controller: _englishCtrl,
-                          decoration: const InputDecoration(
-                            labelText: '英文單字 *',
-                            contentPadding: EdgeInsets.fromLTRB(14, 14, 42, 14),
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? '請輸入英文單字'
-                              : null,
+                      child: TextFormField(
+                        controller: _englishCtrl,
+                        decoration: const InputDecoration(
+                          labelText: '英文單字 *',
                         ),
-                        _englishCtrl,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? '請輸入英文單字'
+                            : null,
                       ),
                     ),
                     if (_aiService != null) ...[
