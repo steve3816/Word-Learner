@@ -64,11 +64,13 @@ class _AddWordScreenState extends State<AddWordScreen> {
   bool _loadingExplanation = false;
   late int _proficiency;
   late bool _isEditing;
+  Word? _currentWord;
 
   @override
   void initState() {
     super.initState();
     _isEditing = widget.word == null;
+    _currentWord = widget.word;
     _proficiency = widget.word?.proficiency ?? 0;
     _englishCtrl = TextEditingController(text: widget.word?.english ?? '');
     _chineseCtrl = TextEditingController(text: widget.word?.chinese ?? '');
@@ -235,22 +237,23 @@ class _AddWordScreenState extends State<AddWordScreen> {
   }
 
   void _cancelEdit() {
-    _englishCtrl.text = widget.word!.english;
-    _chineseCtrl.text = widget.word!.chinese;
-    _explanationCtrl.text = widget.word!.englishExplanation ?? '';
-    _notesCtrl.text = widget.word!.notes ?? '';
+    final word = _currentWord!;
+    _englishCtrl.text = word.english;
+    _chineseCtrl.text = word.chinese;
+    _explanationCtrl.text = word.englishExplanation ?? '';
+    _notesCtrl.text = word.notes ?? '';
     for (final e in _examples) {
       e.dispose();
     }
     _examples.clear();
-    for (final ex in widget.word!.examples) {
+    for (final ex in word.examples) {
       _examples.add(_ExampleEntry(
         sentence: ex.sentence,
         translation: ex.chineseTranslation ?? '',
       ));
     }
     setState(() {
-      _proficiency = widget.word!.proficiency;
+      _proficiency = word.proficiency;
       _isEditing = false;
     });
   }
@@ -307,13 +310,20 @@ class _AddWordScreenState extends State<AddWordScreen> {
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
     );
     try {
-      if (widget.word == null) {
+      if (_currentWord == null) {
         await _db.insertWord(word);
+        WidgetService.syncWords();
+        if (mounted) Navigator.pop(context);
       } else {
         await _db.updateWord(word);
+        WidgetService.syncWords();
+        if (mounted) {
+          setState(() {
+            _currentWord = word;
+            _isEditing = false;
+          });
+        }
       }
-      WidgetService.syncWords();
-      if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) showErrorSnackBar(context, '儲存失敗：$e');
     }
@@ -396,7 +406,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
   // ── View mode ────────────────────────────────────────────────
 
   Widget _buildViewMode() {
-    final word = widget.word!;
+    final word = _currentWord!;
     final levelLabel = proficiencyLevels
         .firstWhere((l) => l.$1 == proficiencyToLevel(_proficiency))
         .$2;
@@ -780,7 +790,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     final AppBar appBar;
     if (!_isEditing) {
       appBar = AppBar(
-        title: Text(widget.word!.english),
+        title: Text(_currentWord!.english),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
