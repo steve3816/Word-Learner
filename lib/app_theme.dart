@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ── Color tokens (Soft Tech design system) ─────────────────────────────────
@@ -180,8 +179,7 @@ void showSuccessSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
     content: Row(
       children: [
-        SvgPicture.asset('assets/icons/emoji_success.svg',
-            width: 22, height: 22, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
+        const Icon(Icons.sentiment_satisfied_outlined, size: 22, color: Colors.white),
         const SizedBox(width: 10),
         Expanded(child: Text(message,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
@@ -196,8 +194,7 @@ void showErrorSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
     content: Row(
       children: [
-        SvgPicture.asset('assets/icons/emoji_error.svg',
-            width: 22, height: 22, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
+        const Icon(Icons.sentiment_very_dissatisfied_outlined, size: 22, color: Colors.white),
         const SizedBox(width: 10),
         Expanded(child: Text(message,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
