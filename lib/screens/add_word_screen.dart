@@ -354,6 +354,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   // ── Shared helpers ──────────────────────────────────────────
 
+  Color _proficiencyBarColor(int proficiency) {
+    final hue = proficiency / 100.0 * 120.0;
+    return HSLColor.fromAHSL(1.0, hue, 0.75, 0.45).toColor();
+  }
+
   Widget _speakerBtn(String text) => Material(
         color: AppColors.cream2,
         borderRadius: BorderRadius.circular(6),
@@ -535,22 +540,39 @@ class _AddWordScreenState extends State<AddWordScreen> {
         // ── Proficiency ───────────────────────────────────────────
         _sectionCard(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('熟練度',
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.ink3,
-                        fontWeight: FontWeight.w500)),
-                const Spacer(),
-                Icon(currentLevel.icon, size: 22),
-                const SizedBox(width: 8),
-                Text(currentLevel.label,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.ink2,
-                        fontWeight: FontWeight.w500)),
+                Row(
+                  children: [
+                    const Text('熟練度',
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.ink3,
+                            fontWeight: FontWeight.w500)),
+                    const Spacer(),
+                    Icon(currentLevel.icon, size: 22),
+                    const SizedBox(width: 8),
+                    Text(currentLevel.label,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.ink2,
+                            fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 6),
+                    Text('($_proficiency%)',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.ink3)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: _proficiency / 100,
+                  backgroundColor: AppColors.line2,
+                  valueColor: AlwaysStoppedAnimation(_proficiencyBarColor(_proficiency)),
+                  borderRadius: BorderRadius.circular(4),
+                  minHeight: 4,
+                ),
               ],
             ),
           ),
