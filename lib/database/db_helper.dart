@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
+import '../utils/proficiency_util.dart';
 
 class DbHelper {
   static final DbHelper _instance = DbHelper._();
@@ -271,7 +272,7 @@ class DbHelper {
       SELECT w.*, wb.name as book_name
       FROM words w
       JOIN word_books wb ON w.word_book_id = wb.id
-      WHERE w.proficiency <= 33
+      WHERE w.proficiency < ${ProficiencyLevel.unfamiliar.score}
       ORDER BY w.proficiency ASC, w.created_at DESC
     ''');
     return rows.map((r) => (Word.fromMap(r), r['book_name'] as String)).toList();

@@ -413,7 +413,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
               tabs: const [
                 Tab(text: '單字書'),
                 Tab(text: '最近'),
-                Tab(text: '不熟'),
+                Tab(text: '非常不熟'),
               ],
             ),
             Expanded(
