@@ -141,8 +141,13 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _submit() {
     final word = _questions[_current].word;
-    final correct = _answerCtrl.text.trim().toLowerCase() ==
-        _questions[_current].answer.toLowerCase();
+    final userInput = _answerCtrl.text.trim().toLowerCase();
+    final acceptedAnswers = _questions[_current].answer
+        .split(RegExp(r'[；;，,]'))
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty);
+    final correct = acceptedAnswers.any((a) => a == userInput) ||
+        userInput == _questions[_current].answer.trim().toLowerCase();
     setState(() {
       _answered = true;
       _isCorrect = correct;
