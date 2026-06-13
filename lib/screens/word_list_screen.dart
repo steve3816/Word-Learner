@@ -263,13 +263,16 @@ class _WordListScreenState extends State<WordListScreen> {
                   IconButton(
                     icon: const Icon(Icons.history_edu),
                     tooltip: '複習此單字書',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            QuizScreen(wordBookId: widget.wordBook.id),
-                      ),
-                    ),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              QuizScreen(wordBookId: widget.wordBook.id),
+                        ),
+                      );
+                      await _loadWords();
+                    },
                   ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),

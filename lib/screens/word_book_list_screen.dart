@@ -336,10 +336,13 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                   IconButton(
                     icon: const Icon(Icons.history_edu),
                     tooltip: '複習全部單字',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const QuizScreen()),
-                    ),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const QuizScreen()),
+                      );
+                      if (mounted) await _loadAll();
+                    },
                   ),
                 IconButton(
                   icon: const Icon(Icons.settings),
