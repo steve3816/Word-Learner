@@ -408,20 +408,23 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                 onChanged: _onSearchChanged,
               ),
             ),
-            TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: '單字書'),
-                Tab(text: '最近'),
-                Tab(text: '非常不熟'),
-              ],
-            ),
             Expanded(
               child: Stack(
                 children: [
-                  TabBarView(
-                    controller: _tabController,
+                  Column(
                     children: [
+                      TabBar(
+                        controller: _tabController,
+                        tabs: const [
+                          Tab(text: '單字書'),
+                          Tab(text: '最近'),
+                          Tab(text: '非常不熟'),
+                        ],
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
                       // ── 單字書列表 ──
                       ListView.builder(
                         padding: const EdgeInsets.symmetric(
@@ -530,6 +533,9 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                       // ── 最不熟練 ──
                       _wordCrossListView(
                           _leastProficientList, '還沒有單字，點 + 新增吧！'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   // 搜尋結果浮層
