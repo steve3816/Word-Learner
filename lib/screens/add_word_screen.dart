@@ -535,6 +535,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
             ],
           ),
         ],
+        if (word.notes?.isNotEmpty == true) ...[
+          const SizedBox(height: 10),
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: '備注',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+            ),
+            child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
+          ),
+        ],
         const SizedBox(height: 20),
 
         // ── Proficiency ───────────────────────────────────────────
@@ -609,36 +620,6 @@ class _AddWordScreenState extends State<AddWordScreen> {
           ),
         ],
 
-        // ── Notes ────────────────────────────────────────────────
-        if (word.notes?.isNotEmpty == true) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: _sectionCard(
-              child: Theme(
-                data: Theme.of(context)
-                    .copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  tilePadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  childrenPadding:
-                      const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  title: const Text('備注',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500)),
-                  initiallyExpanded: false,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(word.notes!,
-                          style: const TextStyle(fontSize: 14)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -833,6 +814,13 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     ],
                   ],
                 ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _notesCtrl,
+                  decoration: const InputDecoration(labelText: '備注'),
+                  minLines: 1,
+                  maxLines: null,
+                ),
                 const SizedBox(height: 20),
                 const Text('熟練度',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
@@ -885,13 +873,6 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   const SizedBox(height: 8),
                   _buildExampleEntry(i),
                 ],
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _notesCtrl,
-                  decoration: const InputDecoration(labelText: '備注'),
-                  minLines: 1,
-                  maxLines: null,
-                ),
                 const SizedBox(height: 16),
               ],
             ),
