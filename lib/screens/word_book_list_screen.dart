@@ -275,8 +275,16 @@ class _WordBookListScreenState extends State<WordBookListScreen>
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(bookName,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          SizedBox(
+            width: 80,
+            child: Text(
+              bookName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ),
           const SizedBox(width: 8),
           proficiencyIcon(word.proficiency, size: 22),
         ],
@@ -494,6 +502,8 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                                           )
                                         : const Icon(Icons.menu_book_rounded),
                                     title: Text(book.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                             fontWeight: FontWeight.w600)),
                                     subtitle: Text('$count 個單字'),
