@@ -3,6 +3,7 @@ import '../app_theme.dart';
 import '../services/ai_service.dart';
 import '../services/export_service.dart';
 import '../services/settings_service.dart';
+import '../utils/proficiency_util.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,7 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _promptFocusNodes = <String, FocusNode>{};
   String? _focusedPromptField;
   AiProvider? _selectedProvider;
-  int _quizMaxProficiency = 100;
+  int _quizMaxProficiency = ProficiencyLevel.proficient.score;
   bool _loading = true;
 
   @override
@@ -427,21 +428,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             setState(() => _quizMaxProficiency = v!),
                         child: Column(
                           children: [
-                            const RadioListTile<int>(
-                              title: Text('全部'),
-                              value: 100,
+                            RadioListTile<int>(
+                              title: const Text('全部'),
+                              value: ProficiencyLevel.proficient.score,
                             ),
-                            const RadioListTile<int>(
-                              title: Text('普通以下'),
-                              value: 99,
+                            RadioListTile<int>(
+                              title: const Text('普通以下'),
+                              value: ProficiencyLevel.proficient.score - 1,
                             ),
-                            const RadioListTile<int>(
-                              title: Text('有點不熟以下'),
-                              value: 66,
+                            RadioListTile<int>(
+                              title: const Text('有點不熟以下'),
+                              value: ProficiencyLevel.neutral.score,
                             ),
-                            const RadioListTile<int>(
-                              title: Text('非常不熟'),
-                              value: 33,
+                            RadioListTile<int>(
+                              title: const Text('非常不熟'),
+                              value: ProficiencyLevel.unfamiliar.score,
                             ),
                           ],
                         ),

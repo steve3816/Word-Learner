@@ -5,6 +5,7 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../services/settings_service.dart';
 import '../utils/list_util.dart';
+import '../utils/proficiency_util.dart';
 
 enum _QuizType {
   enToCn,
@@ -147,7 +148,7 @@ class _QuizScreenState extends State<QuizScreen> {
     final correct = acceptedAnswers.any((a) => a == userInput) ||
         userInput == _questions[_current].answer.trim().toLowerCase();
     final newProficiency =
-        (word.proficiency + (correct ? 10 : -10)).clamp(0, 100);
+        (word.proficiency + (correct ? 10 : -10)).clamp(ProficiencyLevel.veryUnfamiliar.score, ProficiencyLevel.proficient.score);
     setState(() {
       _answered = true;
       _isCorrect = correct;

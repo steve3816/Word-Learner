@@ -73,7 +73,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     super.initState();
     _isEditing = widget.word == null;
     _currentWord = widget.word;
-    _proficiency = widget.word?.proficiency ?? 0;
+    _proficiency = widget.word?.proficiency ?? ProficiencyLevel.veryUnfamiliar.score;
     if (widget.word != null) _loadWordList();
     _englishCtrl = TextEditingController(text: widget.word?.english ?? '');
     _chineseCtrl = TextEditingController(text: widget.word?.chinese ?? '');

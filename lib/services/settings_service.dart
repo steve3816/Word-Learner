@@ -5,6 +5,7 @@ import 'ai_service.dart';
 import 'openai_compatible_service.dart';
 import 'claude_service.dart';
 import 'gemini_service.dart';
+import '../utils/proficiency_util.dart';
 
 class SettingsService {
   static const _providerKey = 'selected_provider';
@@ -130,7 +131,7 @@ class SettingsService {
 
   Future<int> getQuizMaxProficiency() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_quizMaxProficiencyKey) ?? 100;
+    return prefs.getInt(_quizMaxProficiencyKey) ?? ProficiencyLevel.proficient.score;
   }
 
   Future<void> setQuizMaxProficiency(int value) async {
