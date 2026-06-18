@@ -33,12 +33,14 @@ class _QuizResult {
   final bool isCorrect;
   final int oldProficiency;
   final int newProficiency;
+  final String userAnswer;
 
   const _QuizResult({
     required this.question,
     required this.isCorrect,
     required this.oldProficiency,
     required this.newProficiency,
+    required this.userAnswer,
   });
 
   int get delta => newProficiency - oldProficiency;
@@ -56,6 +58,7 @@ class QuizScreen extends StatefulWidget {
 class _QuizScreenState extends State<QuizScreen> {
   final _db = DbHelper();
   final _answerCtrl = TextEditingController();
+  final _answerFocus = FocusNode();
   final _random = Random();
 
   List<_Question> _questions = [];
@@ -75,6 +78,7 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void dispose() {
     _answerCtrl.dispose();
+    _answerFocus.dispose();
     super.dispose();
   }
 
@@ -158,11 +162,13 @@ class _QuizScreenState extends State<QuizScreen> {
         isCorrect: correct,
         oldProficiency: word.proficiency,
         newProficiency: newProficiency,
+        userAnswer: _answerCtrl.text.trim(),
       ));
     });
   }
 
   void _next() {
+    _answerFocus.unfocus();
     if (_current + 1 >= _questions.length) {
       for (final r in _results) {
         _db.updateWord(r.question.word.copyWith(proficiency: r.newProficiency));
@@ -236,8 +242,8 @@ class _QuizScreenState extends State<QuizScreen> {
               const SizedBox(height: 24),
               TextField(
                 controller: _answerCtrl,
+                focusNode: _answerFocus,
                 readOnly: _answered,
-                autofocus: true,
                 style: _answered
                     ? TextStyle(color: Colors.grey.shade500)
                     : null,
@@ -362,6 +368,12 @@ class _QuizScreenState extends State<QuizScreen> {
                     Text(result.question.word.chinese,
                         style: const TextStyle(
                             fontSize: 12, color: AppColors.ink3)),
+                    if (!result.isCorrect) ...[
+                      const SizedBox(height: 4),
+                      Text('你的答案：${result.userAnswer}',
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.red)),
+                    ],
                   ],
                 ),
               ),
