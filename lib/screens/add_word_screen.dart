@@ -795,7 +795,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _explanationCtrl,
-                        decoration: const InputDecoration(labelText: '英文解釋（選填）'),
+                        decoration: const InputDecoration(labelText: '英文解釋'),
                         minLines: 2,
                         maxLines: null,
                       ),
