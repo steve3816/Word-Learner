@@ -245,7 +245,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('設定')),
+      appBar: AppBar(
+        title: const Text('設定'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: '使用說明',
+            onPressed: () => showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('使用說明'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _InfoItem(
+                      icon: Icons.auto_awesome,
+                      text: 'AI填寫功能需填入對應服務的 API Key 才會啟用，未填入時相關按鈕不會出現。',
+                    ),
+                    const SizedBox(height: 12),
+                    _InfoItem(
+                      icon: Icons.storage_outlined,
+                      text: '單字資料儲存於本機裝置，刪除 App 時將一併刪除，建議定期使用「匯出」功能備份。',
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('了解'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       body: DotGridBackground(
         child: Column(
           children: [
@@ -462,6 +497,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InfoItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _InfoItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Colors.grey),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text, style: const TextStyle(fontSize: 14)),
+        ),
+      ],
     );
   }
 }
