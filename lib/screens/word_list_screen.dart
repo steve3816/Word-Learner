@@ -181,8 +181,34 @@ class _WordListScreenState extends State<WordListScreen> {
   }
 
   Future<void> _exportWordBook() async {
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('匯出此單字書'),
+        content: const Text('請選擇匯出方式。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'save'),
+            child: const Text('儲存到本機'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'share'),
+            child: const Text('分享'),
+          ),
+        ],
+      ),
+    );
+    if (action == null) return;
     try {
-      await ExportService().exportWordBook(_wordBook);
+      if (action == 'save') {
+        await ExportService().saveWordBook(_wordBook);
+      } else {
+        await ExportService().exportWordBook(_wordBook);
+      }
     } catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, '匯出失敗：$e');

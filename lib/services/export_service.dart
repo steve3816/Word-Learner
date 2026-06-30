@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -45,10 +46,20 @@ class ExportService {
     await _shareJson(await _buildJson(books, includePrompts: includePrompts));
   }
 
+  Future<void> saveAll({bool includePrompts = false}) async {
+    final rows = await _db.getAllWordBooksWithCount();
+    final books = rows.map((r) => r.$1).toList();
+    await _saveJson(await _buildJson(books, includePrompts: includePrompts));
+  }
+
   Future<void> exportWordBook(WordBook book,
       {bool includePrompts = false}) async {
-    await _shareJson(
-        await _buildJson([book], includePrompts: includePrompts));
+    await _shareJson(await _buildJson([book], includePrompts: includePrompts));
+  }
+
+  Future<void> saveWordBook(WordBook book,
+      {bool includePrompts = false}) async {
+    await _saveJson(await _buildJson([book], includePrompts: includePrompts));
   }
 
   // Step 1: pick file and return preview. Returns null if cancelled.
@@ -154,10 +165,20 @@ class ExportService {
     return json;
   }
 
+  Future<void> _saveJson(Map<String, dynamic> data) async {
+    final json = const JsonEncoder.withIndent('  ').convert(data);
+    final bytes = Uint8List.fromList(utf8.encode(json));
+    await FilePicker.platform.saveFile(
+      dialogTitle: '選擇儲存位置',
+      fileName: 'haword_export.json',
+      bytes: bytes,
+    );
+  }
+
   Future<void> _shareJson(Map<String, dynamic> data) async {
     final json = const JsonEncoder.withIndent('  ').convert(data);
     final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/vocabulary_export.json');
+    final file = File('${dir.path}/haword_export.json');
     await file.writeAsString(json);
     await SharePlus.instance.share(
       ShareParams(files: [XFile(file.path)], text: '單字書匯出'),

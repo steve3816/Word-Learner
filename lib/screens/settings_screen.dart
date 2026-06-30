@@ -125,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _exportAll() async {
     bool includePrompts = false;
-    final confirmed = await showDialog<bool>(
+    final action = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('將所有單字書匯出為 JSON 檔案分享。'),
+              const Text('將所有單字書匯出為 JSON 檔案。'),
               const SizedBox(height: 12),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -146,20 +146,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
+              onPressed: () => Navigator.pop(ctx),
               child: const Text('取消'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('匯出'),
+              onPressed: () => Navigator.pop(ctx, 'save'),
+              child: const Text('儲存到本機'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'share'),
+              child: const Text('分享'),
             ),
           ],
         ),
       ),
     );
-    if (confirmed != true) return;
+    if (action == null) return;
     try {
-      await ExportService().exportAll(includePrompts: includePrompts);
+      if (action == 'save') {
+        await ExportService().saveAll(includePrompts: includePrompts);
+      } else {
+        await ExportService().exportAll(includePrompts: includePrompts);
+      }
     } catch (e) {
       if (mounted) showErrorSnackBar(context, '匯出失敗：$e');
     }
@@ -488,9 +496,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: const EdgeInsets.fromLTRB(40, 8, 40, 32),
               child: GradientButton(
                 onPressed: _save,
+                height: 56,
                 child: const Text('儲存'),
               ),
             ),

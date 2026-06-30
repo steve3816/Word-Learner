@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '單字本',
+      title: 'Haword',
       theme: buildAppTheme(),
       home: const WordBookListScreen(),
     );
