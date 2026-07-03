@@ -205,14 +205,24 @@ void showErrorSnackBar(BuildContext context, String message) {
   ));
 }
 
-// ── Dot grid background ─────────────────────────────────────────────────────
-/// Wraps [child] with a cream + dot-grid painted background.
+// ── Gradient background ─────────────────────────────────────────────────────
 class DotGridBackground extends StatelessWidget {
   final Widget child;
   const DotGridBackground({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) => child;
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF5F0E8), Color(0xFFDDEEDE)],
+        ),
+      ),
+      child: child,
+    );
+  }
 }
 
 // ── Gradient primary button (full-width) ────────────────────────────────────
