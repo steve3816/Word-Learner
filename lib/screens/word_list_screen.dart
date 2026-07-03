@@ -409,7 +409,8 @@ class _WordListScreenState extends State<WordListScreen> {
                                           activeColor: AppColors.purpleDark,
                                         )
                                       : null,
-                                  title: Text(word.english),
+                                  title: Text(word.english,
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                   subtitle: Text(word.chinese),
                                   trailing: _isSelecting
                                       ? null
