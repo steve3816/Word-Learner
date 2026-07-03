@@ -878,9 +878,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(40, 8, 40, 32),
             child: GradientButton(
               onPressed: _save,
+              height: 56,
               child: Text(widget.word == null ? '新增' : '儲存'),
             ),
           ),
