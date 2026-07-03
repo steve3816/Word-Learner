@@ -29,7 +29,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
 
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
-  bool _isSearchActive = false;
+  bool _showSearch = false;
   List<(Word, String)> _searchResults = [];
 
   int _totalWords = 0;
@@ -55,9 +55,6 @@ class _WordBookListScreenState extends State<WordBookListScreen>
       }
     });
     _loadAll();
-    _searchFocus.addListener(() {
-      setState(() => _isSearchActive = _searchFocus.hasFocus);
-    });
     _widgetChannel.setMethodCallHandler((call) async {
       if (call.method == 'onWidgetUri') {
         _handleWidgetUri(Uri.tryParse(call.arguments as String? ?? ''));
@@ -125,6 +122,15 @@ class _WordBookListScreenState extends State<WordBookListScreen>
         if (mounted) await _loadAll();
       });
     }
+  }
+
+  void _closeSearch() {
+    _searchFocus.unfocus();
+    _searchCtrl.clear();
+    setState(() {
+      _showSearch = false;
+      _searchResults = [];
+    });
   }
 
   Future<void> _onSearchChanged(String query) async {
@@ -342,6 +348,14 @@ class _WordBookListScreenState extends State<WordBookListScreen>
             )
           : AppBar(
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  tooltip: '搜尋單字',
+                  onPressed: () {
+                    setState(() => _showSearch = true);
+                    _searchFocus.requestFocus();
+                  },
+                ),
                 if (totalWordCount >= 3)
                   IconButton(
                     icon: const Icon(Icons.history_edu),
@@ -367,61 +381,37 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                 ),
               ],
             ),
-      body: DotGridBackground(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    _StatItem(label: '全部單字', value: '$_totalWords'),
-                    Container(
-                        width: 1, height: 36, color: Colors.grey.shade200),
-                    _StatItem(label: '本週新增', value: '$_recentWords'),
-                    Container(
-                        width: 1, height: 36, color: Colors.grey.shade200),
-                    _StatItem(label: '平均熟練度', value: '$_avgProficiency%'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: TextField(
-                controller: _searchCtrl,
-                focusNode: _searchFocus,
-                decoration: InputDecoration(
-                  hintText: '搜尋單字...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchCtrl.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            _onSearchChanged('');
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+      body: Stack(
+        children: [
+          DotGridBackground(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        _StatItem(label: '全部單字', value: '$_totalWords'),
+                        Container(
+                            width: 1, height: 36, color: Colors.grey.shade200),
+                        _StatItem(label: '本週新增', value: '$_recentWords'),
+                        Container(
+                            width: 1, height: 36, color: Colors.grey.shade200),
+                        _StatItem(label: '平均熟練度', value: '$_avgProficiency%'),
+                      ],
+                    ),
                   ),
                 ),
-                onChanged: _onSearchChanged,
-              ),
-            ),
-            Expanded(
-              child: Stack(
-                children: [
-                  Column(
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Column(
                     children: [
                       TabBar(
                         controller: _tabController,
@@ -550,72 +540,79 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                       ),
                     ],
                   ),
-                  // 搜尋結果浮層
-                  if (_isSearchActive) ...[
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _searchFocus.unfocus(),
-                      child: Container(color: Colors.black26),
-                    ),
-                    if (_searchCtrl.text.isNotEmpty)
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: Material(
-                          elevation: 4,
-                          borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(12)),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight:
-                                  MediaQuery.of(context).size.height * 0.5,
-                            ),
-                            child: _searchResults.isEmpty
-                                ? const Padding(
-                                    padding: EdgeInsets.all(24),
-                                    child: Text('沒有符合的單字',
-                                        style:
-                                            TextStyle(color: Colors.grey)),
-                                  )
-                                : ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: _searchResults.length,
-                                    itemBuilder: (context, index) {
-                                      final (word, bookName) =
-                                          _searchResults[index];
-                                      return ListTile(
-                                        leading: proficiencyIcon(
-                                            word.proficiency,
-                                            size: 28),
-                                        title: Text(word.english),
-                                        subtitle: Text(word.chinese),
-                                        trailing: Text(bookName,
-                                            style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey)),
-                                        onTap: () async {
-                                          _searchFocus.unfocus();
-                                          await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  AddWordScreen(word: word),
-                                            ),
-                                          );
-                                          await _loadAll();
-                                        },
-                                      );
-                                    },
-                                  ),
-                          ),
+                ),
+                if (!_isSelecting) const _BannerAdWidget(),
+              ],
+            ),
+          ),
+          if (_showSearch)
+            Material(
+              color: Colors.white,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: TextField(
+                      controller: _searchCtrl,
+                      focusNode: _searchFocus,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: '搜尋單字...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: _closeSearch,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                  ],
+                      onChanged: _onSearchChanged,
+                    ),
+                  ),
+                  Expanded(
+                    child: _searchCtrl.text.isEmpty
+                        ? const Center(
+                            child: Text('請輸入關鍵字',
+                                style: TextStyle(color: Colors.grey)))
+                        : _searchResults.isEmpty
+                            ? const Center(
+                                child: Text('沒有符合的單字',
+                                    style: TextStyle(color: Colors.grey)))
+                            : ListView.builder(
+                                itemCount: _searchResults.length,
+                                itemBuilder: (context, index) {
+                                  final (word, bookName) =
+                                      _searchResults[index];
+                                  return ListTile(
+                                    leading: proficiencyIcon(
+                                        word.proficiency,
+                                        size: 28),
+                                    title: Text(word.english),
+                                    subtitle: Text(word.chinese),
+                                    trailing: Text(bookName,
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey)),
+                                    onTap: () async {
+                                      _closeSearch();
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              AddWordScreen(word: word),
+                                        ),
+                                      );
+                                      await _loadAll();
+                                    },
+                                  );
+                                },
+                              ),
+                  ),
                 ],
               ),
             ),
-            if (!_isSelecting) const _BannerAdWidget(),
-          ],
-        ),
+        ],
       ),
       bottomNavigationBar: _isSelecting
           ? SafeArea(
