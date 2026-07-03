@@ -115,10 +115,21 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   void _navigateTo(int index) {
     final word = _wordList![index];
+    for (final e in _examples) { e.dispose(); }
     setState(() {
       _currentWord = word;
       _proficiency = word.proficiency;
       _wordIndex = index;
+      _englishCtrl.text = word.english;
+      _chineseCtrl.text = word.chinese;
+      _explanationCtrl.text = word.englishExplanation ?? '';
+      _notesCtrl.text = word.notes ?? '';
+      _examples
+        ..clear()
+        ..addAll(word.examples.map((ex) => _ExampleEntry(
+              sentence: ex.sentence,
+              translation: ex.chineseTranslation ?? '',
+            )));
     });
   }
 
@@ -320,15 +331,15 @@ class _AddWordScreenState extends State<AddWordScreen> {
         .toList();
 
     final word = Word(
-      id: widget.word?.id,
+      id: _currentWord?.id,
       english: english,
       chinese: _chineseCtrl.text.trim(),
       englishExplanation: _explanationCtrl.text.trim().isEmpty
           ? null
           : _explanationCtrl.text.trim(),
       examples: examples,
-      createdAt: widget.word?.createdAt ?? DateTime.now(),
-      wordBookId: widget.word?.wordBookId ?? widget.wordBookId!,
+      createdAt: _currentWord?.createdAt ?? DateTime.now(),
+      wordBookId: _currentWord?.wordBookId ?? widget.wordBookId!,
       proficiency: _proficiency,
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
     );
