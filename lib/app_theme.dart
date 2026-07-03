@@ -206,36 +206,13 @@ void showErrorSnackBar(BuildContext context, String message) {
 }
 
 // ── Dot grid background ─────────────────────────────────────────────────────
-class _DotGridPainter extends CustomPainter {
-  const _DotGridPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF2A2530).withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 14.0;
-    const r = 0.8;
-    for (double x = 0; x <= size.width + spacing; x += spacing) {
-      for (double y = 0; y <= size.height + spacing; y += spacing) {
-        canvas.drawCircle(Offset(x, y), r, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
 /// Wraps [child] with a cream + dot-grid painted background.
 class DotGridBackground extends StatelessWidget {
   final Widget child;
   const DotGridBackground({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: const _DotGridPainter(), child: child);
-  }
+  Widget build(BuildContext context) => child;
 }
 
 // ── Gradient primary button (full-width) ────────────────────────────────────
