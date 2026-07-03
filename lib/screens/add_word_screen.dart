@@ -925,38 +925,42 @@ class _AddWordScreenState extends State<AddWordScreen> {
     final hasNext = hasList && _wordIndex < _wordList!.length - 1;
 
     return Scaffold(
+      extendBody: true,
       appBar: appBar,
       body: DotGridBackground(
         child: _isEditing ? _buildEditMode() : _buildViewMode(),
       ),
       bottomNavigationBar: hasList
-          ? SafeArea(
-              child: SizedBox(
-                height: 56,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Text(
-                      '${_wordIndex + 1} / ${_wordList!.length}',
-                      style: const TextStyle(fontSize: 13, color: AppColors.ink3),
-                    ),
-                    if (hasPrev)
-                      Align(
-                        alignment: const Alignment(-0.5, 0),
-                        child: IconButton(
-                          icon: const Icon(Icons.chevron_left),
-                          onPressed: () => _navigateTo(_wordIndex - 1),
-                        ),
+          ? Material(
+              color: Colors.transparent,
+              child: SafeArea(
+                child: SizedBox(
+                  height: 56,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Text(
+                        '${_wordIndex + 1} / ${_wordList!.length}',
+                        style: const TextStyle(fontSize: 13, color: AppColors.ink3),
                       ),
-                    if (hasNext)
-                      Align(
-                        alignment: const Alignment(0.5, 0),
-                        child: IconButton(
-                          icon: const Icon(Icons.chevron_right),
-                          onPressed: () => _navigateTo(_wordIndex + 1),
+                      if (hasPrev)
+                        Align(
+                          alignment: const Alignment(-0.5, 0),
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_left),
+                            onPressed: () => _navigateTo(_wordIndex - 1),
+                          ),
                         ),
-                      ),
-                  ],
+                      if (hasNext)
+                        Align(
+                          alignment: const Alignment(0.5, 0),
+                          child: IconButton(
+                            icon: const Icon(Icons.chevron_right),
+                            onPressed: () => _navigateTo(_wordIndex + 1),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             )
