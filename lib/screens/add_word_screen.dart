@@ -504,7 +504,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 children: [
                   Text(word.english,
                       style: const TextStyle(
-                          fontSize: 28, fontWeight: FontWeight.bold)),
+                          fontSize: 32, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   Text(word.chinese,
                       style: const TextStyle(
@@ -525,7 +525,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 child: Text(
                   word.englishExplanation!,
                   style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       color: AppColors.ink3,
                       fontStyle: FontStyle.italic),
                 ),
