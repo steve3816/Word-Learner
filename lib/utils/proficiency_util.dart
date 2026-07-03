@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum ProficiencyLevel {
-  veryUnfamiliar(score: 0,   label: '非常不熟', icon: Icons.sentiment_very_dissatisfied_outlined),
+  veryUnfamiliar(score: 0,   label: '非常不熟', icon: Icons.sentiment_very_dissatisfied),
   unfamiliar    (score: 30,  label: '有點不熟', icon: Icons.sentiment_neutral_outlined),
   neutral       (score: 60,  label: '普通',     icon: Icons.sentiment_satisfied_outlined),
   proficient    (score: 100, label: '非常熟練',   icon: Icons.sentiment_very_satisfied_outlined);
