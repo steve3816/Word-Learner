@@ -294,203 +294,231 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 children: [
-                  ExpansionTile(
-                    title: const Text(
-                      'AI 提供者',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    tilePadding: EdgeInsets.zero,
-                    children: [
-                      RadioGroup<AiProvider?>(
-                        groupValue: _selectedProvider,
-                        onChanged: (v) => setState(() => _selectedProvider = v),
-                        child: Column(
-                          children: [
-                            const RadioListTile<AiProvider?>(
-                              title: Text('無'),
-                              value: null,
-                            ),
-                            ...AiProvider.values.map((p) =>
-                                RadioListTile<AiProvider?>(
-                                  title: Text(
-                                      '${p.displayName} (${p.modelName})'),
-                                  value: p,
-                                )),
-                          ],
-                        ),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shadowColor: Colors.black26,
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      title: const Text(
+                        'AI 提供者',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                    ],
-                  ),
-                  ExpansionTile(
-                    title: const Text(
-                      'API Keys',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      children: [
+                        RadioGroup<AiProvider?>(
+                          groupValue: _selectedProvider,
+                          onChanged: (v) => setState(() => _selectedProvider = v),
+                          child: Column(
+                            children: [
+                              const RadioListTile<AiProvider?>(
+                                title: Text('無'),
+                                value: null,
+                              ),
+                              ...AiProvider.values.map((p) =>
+                                  RadioListTile<AiProvider?>(
+                                    title: Text('${p.displayName} (${p.modelName})'),
+                                    value: p,
+                                  )),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    tilePadding: EdgeInsets.zero,
-                    children: [
-                      const SizedBox(height: 8),
-                      ...AiProvider.values.map(
-                        (p) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: TextField(
-                            controller: _keyControllers[p],
-                            obscureText: _obscured[p]!,
-                            decoration: InputDecoration(
-                              labelText: '${p.displayName} API Key',
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscured[p]!
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
+                  ),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shadowColor: Colors.black26,
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      title: const Text(
+                        'API Keys',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      children: [
+                        ...AiProvider.values.map(
+                          (p) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: TextField(
+                              controller: _keyControllers[p],
+                              obscureText: _obscured[p]!,
+                              decoration: InputDecoration(
+                                labelText: '${p.displayName} API Key',
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscured[p]!
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                  onPressed: () => setState(
+                                      () => _obscured[p] = !_obscured[p]!),
                                 ),
-                                onPressed: () => setState(
-                                    () => _obscured[p] = !_obscured[p]!),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  ExpansionTile(
-                    title: const Text(
-                      'AI 提示詞設定',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ],
                     ),
-                    tilePadding: EdgeInsets.zero,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          '用 {word} 代表輸入的英文單字',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                  ),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shadowColor: Colors.black26,
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      title: const Text(
+                        'AI 提示詞設定',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      ...SettingsService.promptFields.map((field) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      SettingsService.promptLabel(field),
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                    const Spacer(),
-                                    AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 150),
-                                      child: _focusedPromptField == field
-                                          ? TextButton(
-                                              key: const ValueKey('insert'),
-                                              onPressed: () => _insertWordPlaceholder(field),
-                                              child: const Text('插入 {word}'),
-                                            )
-                                          : const SizedBox.shrink(key: ValueKey('hidden')),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => _resetPrompt(field),
-                                      child: const Text('還原預設'),
-                                    ),
-                                  ],
-                                ),
-                                  ValueListenableBuilder<TextEditingValue>(
-                                  valueListenable: _promptControllers[field]!,
-                                  builder: (_, value, _) {
-                                    if (value.text.contains(SettingsService.wordPlaceholder)) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return const Padding(
-                                      padding: EdgeInsets.only(bottom: 4),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.warning_amber_rounded,
-                                              size: 14, color: Colors.red),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            '缺少目標單字標示！',
-                                            style: TextStyle(
-                                                color: Colors.red,
-                                                fontSize: 12),
-                                          ),
-                                        ],
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            '用 {word} 代表輸入的英文單字',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        ...SettingsService.promptFields.map((field) => Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        SettingsService.promptLabel(field),
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
                                       ),
-                                    );
-                                  },
-                                ),
-                                TextField(
-                                  controller: _promptControllers[field],
-                                  focusNode: _promptFocusNodes[field],
-                                  maxLines: 4,
-                                ),
-                              ],
-                            ),
-                          )),
-                    ],
-                  ),
-                  ExpansionTile(
-                    title: const Text(
-                      '資料管理',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      const Spacer(),
+                                      AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 150),
+                                        child: _focusedPromptField == field
+                                            ? TextButton(
+                                                key: const ValueKey('insert'),
+                                                onPressed: () => _insertWordPlaceholder(field),
+                                                child: const Text('插入 {word}'),
+                                              )
+                                            : const SizedBox.shrink(key: ValueKey('hidden')),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => _resetPrompt(field),
+                                        child: const Text('還原預設'),
+                                      ),
+                                    ],
+                                  ),
+                                  ValueListenableBuilder<TextEditingValue>(
+                                    valueListenable: _promptControllers[field]!,
+                                    builder: (_, value, _) {
+                                      if (value.text.contains(SettingsService.wordPlaceholder)) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return const Padding(
+                                        padding: EdgeInsets.only(bottom: 4),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.warning_amber_rounded,
+                                                size: 14, color: Colors.red),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              '缺少目標單字標示！',
+                                              style: TextStyle(
+                                                  color: Colors.red, fontSize: 12),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  TextField(
+                                    controller: _promptControllers[field],
+                                    focusNode: _promptFocusNodes[field],
+                                    maxLines: 4,
+                                  ),
+                                ],
+                              ),
+                            )),
+                      ],
                     ),
-                    tilePadding: EdgeInsets.zero,
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.upload_file_outlined),
-                        title: const Text('匯出全部單字書'),
-                        subtitle: const Text('以 JSON 格式分享所有單字書'),
-                        onTap: _exportAll,
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.download_outlined),
-                        title: const Text('匯入單字書'),
-                        subtitle: const Text('從 JSON 檔案匯入'),
-                        onTap: _import,
-                      ),
-                    ],
                   ),
-                  ExpansionTile(
-                    title: const Text(
-                      '複習出題範圍',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    tilePadding: EdgeInsets.zero,
-                    children: [
-                      RadioGroup<int>(
-                        groupValue: _quizMaxProficiency,
-                        onChanged: (v) =>
-                            setState(() => _quizMaxProficiency = v!),
-                        child: Column(
-                          children: [
-                            RadioListTile<int>(
-                              title: const Text('全部'),
-                              value: ProficiencyLevel.proficient.score,
-                            ),
-                            RadioListTile<int>(
-                              title: const Text('普通以下'),
-                              value: ProficiencyLevel.proficient.score - 1,
-                            ),
-                            RadioListTile<int>(
-                              title: const Text('有點不熟以下'),
-                              value: ProficiencyLevel.neutral.score,
-                            ),
-                            RadioListTile<int>(
-                              title: const Text('非常不熟'),
-                              value: ProficiencyLevel.unfamiliar.score,
-                            ),
-                          ],
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shadowColor: Colors.black26,
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      title: const Text(
+                        '資料管理',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.upload_file_outlined),
+                          title: const Text('匯出全部單字書'),
+                          subtitle: const Text('以 JSON 格式分享所有單字書'),
+                          onTap: _exportAll,
                         ),
+                        ListTile(
+                          leading: const Icon(Icons.download_outlined),
+                          title: const Text('匯入單字書'),
+                          subtitle: const Text('從 JSON 檔案匯入'),
+                          onTap: _import,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shadowColor: Colors.black26,
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      title: const Text(
+                        '複習出題範圍',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                    ],
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      children: [
+                        RadioGroup<int>(
+                          groupValue: _quizMaxProficiency,
+                          onChanged: (v) => setState(() => _quizMaxProficiency = v!),
+                          child: Column(
+                            children: [
+                              RadioListTile<int>(
+                                title: const Text('全部'),
+                                value: ProficiencyLevel.proficient.score,
+                              ),
+                              RadioListTile<int>(
+                                title: const Text('普通以下'),
+                                value: ProficiencyLevel.proficient.score - 1,
+                              ),
+                              RadioListTile<int>(
+                                title: const Text('有點不熟以下'),
+                                value: ProficiencyLevel.neutral.score,
+                              ),
+                              RadioListTile<int>(
+                                title: const Text('非常不熟'),
+                                value: ProficiencyLevel.unfamiliar.score,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
