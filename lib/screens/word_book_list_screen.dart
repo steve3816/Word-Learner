@@ -277,33 +277,39 @@ class _WordBookListScreenState extends State<WordBookListScreen>
   }
 
   Widget _wordTile(Word word, String bookName) {
-    return ListTile(
-      title: Text(word.english),
-      subtitle: Text(word.chinese),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              bookName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 2,
+      shadowColor: Colors.black26,
+      child: ListTile(
+        title: Text(word.english,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(word.chinese),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 80,
+              child: Text(
+                bookName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          proficiencyIcon(word.proficiency, size: 22),
-        ],
+            const SizedBox(width: 8),
+            proficiencyIcon(word.proficiency, size: 22),
+          ],
+        ),
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
+          );
+          await _loadAll();
+        },
       ),
-      onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
-        );
-        await _loadAll();
-      },
     );
   }
 
@@ -312,7 +318,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
       return Center(child: Text(emptyText));
     }
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       itemCount: words.length,
       itemBuilder: (_, i) => _wordTile(words[i].$1, words[i].$2),
     );
