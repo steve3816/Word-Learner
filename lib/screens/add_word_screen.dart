@@ -908,7 +908,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     final AppBar appBar;
     if (!_isEditing) {
       appBar = AppBar(
-        title: Text(_currentWord!.english),
+        title: const Text(''),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
