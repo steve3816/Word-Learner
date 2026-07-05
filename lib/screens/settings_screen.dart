@@ -301,6 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
+                      leading: const Icon(Icons.smart_toy_outlined),
                       title: const Text(
                         'AI 提供者',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -335,6 +336,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
+                      leading: const Icon(Icons.vpn_key_outlined),
                       title: const Text(
                         'API Keys',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -373,6 +375,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
+                      leading: const Icon(Icons.edit_note),
                       title: const Text(
                         'AI 提示詞設定',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -456,6 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
+                      leading: const Icon(Icons.folder_open),
                       title: const Text(
                         '資料管理',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -484,6 +488,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
+                      leading: const Icon(Icons.school_outlined),
                       title: const Text(
                         '複習出題範圍',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
