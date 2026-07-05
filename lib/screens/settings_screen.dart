@@ -253,6 +253,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const Text('設定'),
         actions: [
@@ -290,11 +291,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
       body: DotGridBackground(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
                 children: [
                   Card(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -523,15 +521,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(40, 8, 40, 32),
-              child: GradientButton(
-                onPressed: _save,
-                height: 56,
-                child: const Text('儲存'),
-              ),
+      bottomNavigationBar: Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(40, 8, 40, 16),
+            child: GradientButton(
+              onPressed: _save,
+              height: 56,
+              child: const Text('儲存'),
             ),
-          ],
+          ),
         ),
       ),
     );
