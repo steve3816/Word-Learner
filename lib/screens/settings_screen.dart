@@ -469,13 +469,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ListTile(
                           leading: const Icon(Icons.upload_file_outlined),
                           title: const Text('匯出全部單字書'),
-                          subtitle: const Text('以 JSON 格式分享所有單字書'),
                           onTap: _exportAll,
                         ),
                         ListTile(
                           leading: const Icon(Icons.download_outlined),
                           title: const Text('匯入單字書'),
-                          subtitle: const Text('從 JSON 檔案匯入'),
                           onTap: _import,
                         ),
                       ],
