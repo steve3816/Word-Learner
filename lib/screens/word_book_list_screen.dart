@@ -113,13 +113,17 @@ class _WordBookListScreenState extends State<WordBookListScreen>
       if (wordId == null) return;
       final word = await _db.getWordById(wordId);
       if (word == null || !mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final wordBook = await _db.getWordBook(word.wordBookId);
+      if (wordBook == null || !mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        await Navigator.push(
-          context,
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => WordListScreen(wordBook: wordBook)),
+          (route) => route.isFirst,
+        );
+        Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
         );
-        if (mounted) await _loadAll();
       });
     }
   }

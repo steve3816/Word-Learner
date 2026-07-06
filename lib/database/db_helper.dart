@@ -147,6 +147,12 @@ class DbHelper {
     await db.delete('word_books', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<WordBook?> getWordBook(int id) async {
+    final db = await database;
+    final rows = await db.query('word_books', where: 'id = ?', whereArgs: [id], limit: 1);
+    return rows.isEmpty ? null : WordBook.fromMap(rows.first);
+  }
+
   Future<WordBook?> getDefaultWordBook() async {
     final db = await database;
     final rows =
