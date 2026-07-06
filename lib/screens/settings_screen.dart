@@ -3,6 +3,7 @@ import '../app_theme.dart';
 import '../services/ai_service.dart';
 import '../services/export_service.dart';
 import '../services/settings_service.dart';
+import '../services/widget_service.dart';
 import '../utils/proficiency_util.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -230,6 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true || !mounted) return;
     try {
       await service.importData(preview, importPrompts: importPrompts);
+      await WidgetService.syncWords();
       if (mounted) showSuccessSnackBar(context, '匯入成功');
     } catch (e) {
       if (mounted) showErrorSnackBar(context, '匯入失敗：$e');

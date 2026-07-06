@@ -60,18 +60,21 @@ class WordWidgetProvider : AppWidgetProvider() {
                     try {
                         val words = JSONArray(json)
                         if (words.length() > 0) {
-                            val lastIndex = prefs.getInt("flutter.widget_last_index_$appWidgetId", -1)
+                            val lastWordId = prefs.getInt("flutter.widget_last_word_id_$appWidgetId", -1)
                             val nextIndex = if (words.length() == 1) {
                                 0
                             } else {
-                                val candidates = (0 until words.length()).filter { it != lastIndex }
+                                val candidates = (0 until words.length()).filter { i ->
+                                    val w = words.getJSONObject(i)
+                                    (if (w.has("id")) w.getInt("id") else -1) != lastWordId
+                                }
                                 candidates[Random.nextInt(candidates.size)]
                             }
-                            prefs.edit().putInt("flutter.widget_last_index_$appWidgetId", nextIndex).apply()
                             val word = words.getJSONObject(nextIndex)
+                            displayedWordId = if (word.has("id")) word.getInt("id") else null
+                            prefs.edit().putInt("flutter.widget_last_word_id_$appWidgetId", displayedWordId ?: -1).apply()
                             views.setTextViewText(R.id.widget_english, word.getString("english"))
                             views.setTextViewText(R.id.widget_chinese, word.getString("chinese"))
-                            displayedWordId = if (word.has("id")) word.getInt("id") else null
                         } else {
                             setEmptyState(views)
                         }

@@ -215,6 +215,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
     );
     if (confirmed != true) return;
     await _db.deleteWordBook(book.id!);
+    await WidgetService.syncWords();
     await _loadAll();
   }
 
