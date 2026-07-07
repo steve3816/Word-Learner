@@ -495,7 +495,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.school_outlined),
                       title: const Text(
-                        '複習出題範圍',
+                        '複習出題熟練度範圍',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
