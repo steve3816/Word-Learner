@@ -276,6 +276,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     _InfoItem(
+                      icon: Icons.key_outlined,
+                      text: 'API Key 是 AI 服務商核發給您的個人授權碼，用來驗證身分與計算用量，通常需先至該服務官方網站申請及付費才能取得。',
+                    ),
+                    const SizedBox(height: 12),
+                    _InfoItem(
                       icon: Icons.storage_outlined,
                       text: '單字資料儲存於本機裝置，刪除 App 時將一併刪除，建議定期使用「匯出」功能備份。',
                     ),
