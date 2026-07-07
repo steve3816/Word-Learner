@@ -4,6 +4,7 @@ import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../services/settings_service.dart';
+import '../services/tts_service.dart';
 import '../utils/list_util.dart';
 import '../utils/proficiency_util.dart';
 
@@ -231,12 +232,36 @@ class _QuizScreenState extends State<QuizScreen> {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text(
-                    question.prompt,
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
+                  child: question.type == _QuizType.enDefinition
+                      ? Column(
+                          children: [
+                            Text(
+                              question.prompt,
+                              style: const TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                icon: const Icon(Icons.volume_up_rounded,
+                                    size: 20),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: '朗讀解釋',
+                                onPressed: () => TtsService.instance
+                                    .speak(question.prompt),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          question.prompt,
+                          style: const TextStyle(
+                              fontSize: 22, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
