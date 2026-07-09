@@ -305,19 +305,21 @@ class _AddWordScreenState extends State<AddWordScreen> {
       }
     }
     if (invalidIndices.isNotEmpty && mounted) {
-      showDialog(
+      final proceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('例句錯誤'),
+          title: const Text('例句未包含單字'),
           content: Text(
-            '例句 ${invalidIndices.join('、')} 未包含英文單字「$english」，請修正後再儲存。',
+            '例句 ${invalidIndices.join('、')} 未包含英文單字「$english」。\n\n'
+            '例句仍可儲存，但複習時將不會納入出題範圍。',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('確認')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('返回修改')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('仍要儲存')),
           ],
         ),
       );
-      return;
+      if (proceed != true) return;
     }
 
     final examples = _examples

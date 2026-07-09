@@ -99,14 +99,12 @@ class _QuizScreenState extends State<QuizScreen> {
     return (List<Word>.from(words)..shuffle(_random))
         .take(10)
         .map((word) {
-          final hasExample = word.exampleSentence != null &&
-              word.exampleSentence!
-                  .toLowerCase()
-                  .contains(word.english.toLowerCase());
+          final hasBlankableExample = word.examples.any((ex) =>
+              ex.sentence.toLowerCase().contains(word.english.toLowerCase()));
           final availableTypes = [
             _QuizType.enToCn,
             _QuizType.cnToEn,
-            if (hasExample) _QuizType.fillInBlank,
+            if (hasBlankableExample) _QuizType.fillInBlank,
             if (word.englishExplanation != null) _QuizType.enDefinition,
           ];
           return _buildQuestion(
@@ -130,7 +128,12 @@ class _QuizScreenState extends State<QuizScreen> {
             prompt: word.englishExplanation!,
             answer: word.english);
       case _QuizType.fillInBlank:
-        final ex = ListUtil.getRandomElement(word.examples, _random);
+        final blankable = word.examples
+            .where((ex) => ex.sentence
+                .toLowerCase()
+                .contains(word.english.toLowerCase()))
+            .toList();
+        final ex = ListUtil.getRandomElement(blankable, _random);
         final blanked = ex.sentence.replaceAll(
           RegExp(RegExp.escape(word.english), caseSensitive: false),
           '___',
@@ -472,6 +475,27 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _QuizInfoItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _QuizInfoItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Colors.grey),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text, style: const TextStyle(fontSize: 14)),
+        ),
+      ],
     );
   }
 }
