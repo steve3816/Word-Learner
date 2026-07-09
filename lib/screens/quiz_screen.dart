@@ -219,6 +219,51 @@ class _QuizScreenState extends State<QuizScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('複習 ${_current + 1} / ${_questions.length}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: '使用說明',
+            onPressed: () => showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('使用說明'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '複習會從熟練度未達到「設定」中「複習出題熟練度範圍」上限的單字中出題，題型隨機包含英翻中、中翻英、英文解釋猜單字、例句填空。',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '以下情況將使該欄位不納入出題範圍：',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const _QuizInfoItem(
+                        icon: Icons.close,
+                        text: '例句填空：不包含英文單字原形的例句',
+                      ),
+                      const SizedBox(height: 12),
+                      const _QuizInfoItem(
+                        icon: Icons.close,
+                        text: '英文解釋：未填寫英文解釋',
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('了解'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: DotGridBackground(
         child: Padding(
