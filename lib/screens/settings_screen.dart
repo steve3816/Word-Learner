@@ -474,11 +474,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                       children: [
                         ListTile(
+                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
                           leading: const Icon(Icons.upload_file_outlined),
                           title: const Text('匯出全部單字書'),
                           onTap: _exportAll,
                         ),
                         ListTile(
+                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
                           leading: const Icon(Icons.download_outlined),
                           title: const Text('匯入單字書'),
                           onTap: _import,
