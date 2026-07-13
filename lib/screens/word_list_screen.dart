@@ -233,7 +233,8 @@ class _WordListScreenState extends State<WordListScreen> {
             TextField(
               controller: descCtrl,
               decoration: const InputDecoration(labelText: '描述'),
-              maxLines: 2,
+              minLines: 2,
+              maxLines: 6,
             ),
           ],
         ),

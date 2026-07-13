@@ -166,7 +166,8 @@ class _WordBookListScreenState extends State<WordBookListScreen>
             TextField(
               controller: descCtrl,
               decoration: const InputDecoration(hintText: '描述'),
-              maxLines: 2,
+              minLines: 2,
+              maxLines: 6,
             ),
           ],
         ),
