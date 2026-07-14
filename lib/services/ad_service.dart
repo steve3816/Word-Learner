@@ -7,7 +7,7 @@ class AdService {
 
   // 上架前填入 AdMob 後台的真實 Ad Unit ID
   static const _iosProdId     = '';
-  static const _androidProdId = '';
+  static const _androidProdId = 'ca-app-pub-3197847556942098/3357169921';
 
   static String get bannerAdUnitId {
     if (kDebugMode) {

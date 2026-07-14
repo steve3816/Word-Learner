@@ -50,3 +50,11 @@ app.*.map.json
 
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
+
+# Signing secrets - never commit
+android/key.properties
+*.jks
+*.keystore
+*.p12
+google-services.json
+GoogleService-Info.plist
