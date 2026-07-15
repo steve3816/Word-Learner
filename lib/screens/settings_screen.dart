@@ -271,7 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _InfoItem(
-                      icon: Icons.auto_awesome,
+                      icon: Icons.auto_fix_high,
                       text: 'AI填寫功能需填入對應服務的 API Key 才會啟用，未填入時相關按鈕不會出現。',
                     ),
                     const SizedBox(height: 12),

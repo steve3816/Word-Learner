@@ -21,7 +21,7 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE word_books(
@@ -48,6 +48,13 @@ class DbHelper {
             word_book_id INTEGER NOT NULL,
             proficiency INTEGER NOT NULL DEFAULT 0,
             notes TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE word_relations(
+            word_id_a INTEGER NOT NULL,
+            word_id_b INTEGER NOT NULL,
+            PRIMARY KEY (word_id_a, word_id_b)
           )
         ''');
       },
@@ -123,6 +130,15 @@ class DbHelper {
         if (oldVersion < 7) {
           await db.execute('ALTER TABLE words ADD COLUMN notes TEXT');
         }
+        if (oldVersion < 8) {
+          await db.execute('''
+            CREATE TABLE word_relations(
+              word_id_a INTEGER NOT NULL,
+              word_id_b INTEGER NOT NULL,
+              PRIMARY KEY (word_id_a, word_id_b)
+            )
+          ''');
+        }
       },
     );
   }
@@ -143,6 +159,16 @@ class DbHelper {
     final rows = await db.query('word_books',
         columns: ['is_default'], where: 'id = ?', whereArgs: [id]);
     if (rows.isNotEmpty && (rows.first['is_default'] as int) == 1) return;
+    final wordIds = (await db.query('words',
+            columns: ['id'], where: 'word_book_id = ?', whereArgs: [id]))
+        .map((r) => r['id'] as int)
+        .toList();
+    if (wordIds.isNotEmpty) {
+      final placeholders = List.filled(wordIds.length, '?').join(',');
+      await db.delete('word_relations',
+          where: 'word_id_a IN ($placeholders) OR word_id_b IN ($placeholders)',
+          whereArgs: [...wordIds, ...wordIds]);
+    }
     await db.delete('words', where: 'word_book_id = ?', whereArgs: [id]);
     await db.delete('word_books', where: 'id = ?', whereArgs: [id]);
   }
@@ -191,6 +217,8 @@ class DbHelper {
 
   Future<void> deleteWord(int id) async {
     final db = await database;
+    await db.delete('word_relations',
+        where: 'word_id_a = ? OR word_id_b = ?', whereArgs: [id, id]);
     await db.delete('words', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -300,5 +328,39 @@ class DbHelper {
       final bookName = row['book_name'] as String;
       return (word, bookName);
     }).toList();
+  }
+
+  // ── Word Relations ──────────────────────────────────────────
+  Future<void> addWordRelations(int wordId, List<int> relatedIds) async {
+    if (relatedIds.isEmpty) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final relatedId in relatedIds) {
+      final a = wordId < relatedId ? wordId : relatedId;
+      final b = wordId < relatedId ? relatedId : wordId;
+      batch.insert('word_relations', {'word_id_a': a, 'word_id_b': b},
+          conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> removeWordRelation(int wordId, int relatedId) async {
+    final db = await database;
+    final a = wordId < relatedId ? wordId : relatedId;
+    final b = wordId < relatedId ? relatedId : wordId;
+    await db.delete('word_relations',
+        where: 'word_id_a = ? AND word_id_b = ?', whereArgs: [a, b]);
+  }
+
+  Future<List<Word>> getRelatedWords(int wordId) async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT w.* FROM words w
+      JOIN word_relations r
+        ON (r.word_id_a = ? AND w.id = r.word_id_b)
+        OR (r.word_id_b = ? AND w.id = r.word_id_a)
+      ORDER BY w.english ASC
+    ''', [wordId, wordId]);
+    return rows.map(Word.fromMap).toList();
   }
 }

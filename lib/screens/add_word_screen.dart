@@ -8,6 +8,7 @@ import '../services/settings_service.dart';
 import '../services/tts_service.dart';
 import '../services/widget_service.dart';
 import '../utils/proficiency_util.dart';
+import 'word_relation_picker_screen.dart';
 
 const _exampleFormatSuffix =
     ' Also provide its Traditional Chinese translation. '
@@ -67,6 +68,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   List<Word>? _wordList;
   int _wordIndex = 0;
+  List<Word> _relatedWords = [];
 
   @override
   void initState() {
@@ -74,7 +76,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
     _isEditing = widget.word == null;
     _currentWord = widget.word;
     _proficiency = widget.word?.proficiency ?? ProficiencyLevel.veryUnfamiliar.score;
-    if (widget.word != null) _loadWordList();
+    if (widget.word != null) {
+      _loadWordList();
+      _loadRelatedWords();
+    }
     _englishCtrl = TextEditingController(text: widget.word?.english ?? '');
     _chineseCtrl = TextEditingController(text: widget.word?.chinese ?? '');
     _explanationCtrl = TextEditingController(text: widget.word?.englishExplanation ?? '');
@@ -131,6 +136,47 @@ class _AddWordScreenState extends State<AddWordScreen> {
               translation: ex.chineseTranslation ?? '',
             )));
     });
+    _loadRelatedWords();
+  }
+
+  Future<void> _loadRelatedWords() async {
+    final id = _currentWord?.id;
+    if (id == null) return;
+    final words = await _db.getRelatedWords(id);
+    if (mounted) setState(() => _relatedWords = words);
+  }
+
+  Future<void> _openRelationPicker() async {
+    final word = _currentWord;
+    if (word?.id == null) return;
+    final selected = await Navigator.push<List<int>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WordRelationPickerScreen(
+          wordBookId: word!.wordBookId,
+          excludeWordId: word.id!,
+          alreadyRelatedIds: _relatedWords.map((w) => w.id!).toSet(),
+        ),
+      ),
+    );
+    if (selected == null || selected.isEmpty) return;
+    await _db.addWordRelations(word!.id!, selected);
+    await _loadRelatedWords();
+  }
+
+  Future<void> _removeRelation(Word relatedWord) async {
+    final id = _currentWord?.id;
+    if (id == null || relatedWord.id == null) return;
+    await _db.removeWordRelation(id, relatedWord.id!);
+    await _loadRelatedWords();
+  }
+
+  Future<void> _openRelatedWord(Word relatedWord) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddWordScreen(word: relatedWord)),
+    );
+    await _loadRelatedWords();
   }
 
   Future<void> _loadSettings() async {
@@ -386,6 +432,14 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ),
       );
 
+  Widget _circleAddBtn(VoidCallback onPressed) => IconButton(
+        icon: const Icon(Icons.add_circle_outline, size: 24),
+        color: AppColors.purpleDark,
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+      );
+
   Widget _aiIconBtn({required bool loading, required VoidCallback onPressed}) {
     if (loading) {
       return const Padding(
@@ -397,50 +451,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
       );
     }
     return IconButton(
-      icon: const Icon(Icons.auto_awesome, size: 18),
+      icon: const Icon(Icons.auto_fix_high, size: 18),
       onPressed: onPressed,
       style: IconButton.styleFrom(foregroundColor: AppColors.purpleDark),
       padding: const EdgeInsets.all(6),
       constraints: const BoxConstraints(),
-    );
-  }
-
-  Widget _aiButton({required bool loading, required VoidCallback onPressed}) {
-    if (loading) {
-      return const SizedBox(
-        width: 48, height: 48,
-        child: Padding(
-          padding: EdgeInsets.all(12),
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-    return SizedBox(
-      width: 48, height: 48,
-      child: Tooltip(
-        message: 'AI 產生',
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.purpleDark, AppColors.pinkDark],
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            borderRadius: BorderRadius.circular(12),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onPressed,
-              child: const Center(
-                child: Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -559,6 +574,19 @@ class _AddWordScreenState extends State<AddWordScreen> {
             child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
           ),
         ],
+        if (_relatedWords.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _relatedWords
+                .map((rw) => InputChip(
+                      label: Text(rw.english),
+                      onPressed: () => _openRelatedWord(rw),
+                    ))
+                .toList(),
+          ),
+        ],
         const SizedBox(height: 20),
 
         // ── Proficiency ───────────────────────────────────────────
@@ -660,7 +688,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       if (value.text.trim().isEmpty) {
                         return const SizedBox(width: 48, height: 48);
                       }
-                      return _aiButton(
+                      return _aiIconBtn(
                         loading: entry.loading,
                         onPressed: () => _generateExample(index),
                       );
@@ -834,6 +862,34 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   minLines: 1,
                   maxLines: null,
                 ),
+                if (_currentWord?.id != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text('關聯字',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w500)),
+                      const Spacer(),
+                      _circleAddBtn(_openRelationPicker),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (_relatedWords.isEmpty)
+                    const Text('尚無關聯字',
+                        style: TextStyle(fontSize: 13, color: AppColors.ink3))
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _relatedWords
+                          .map((rw) => InputChip(
+                                label: Text(rw.english),
+                                onDeleted: () => _removeRelation(rw),
+                                deleteIcon: const Icon(Icons.close, size: 16),
+                              ))
+                          .toList(),
+                    ),
+                ],
                 const SizedBox(height: 20),
                 const Text('熟練度',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
@@ -875,11 +931,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w500)),
                     const Spacer(),
-                    TextButton.icon(
-                      onPressed: _addExample,
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('新增例句'),
-                    ),
+                    _circleAddBtn(_addExample),
                   ],
                 ),
                 for (int i = 0; i < _examples.length; i++) ...[
