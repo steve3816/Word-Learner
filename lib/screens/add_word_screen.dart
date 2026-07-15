@@ -453,7 +453,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
     return IconButton(
       icon: const Icon(Icons.auto_fix_high, size: 18),
       onPressed: onPressed,
-      style: IconButton.styleFrom(foregroundColor: AppColors.purpleDark),
+      style: IconButton.styleFrom(
+        foregroundColor: AppColors.purpleDark,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       padding: const EdgeInsets.all(6),
       constraints: const BoxConstraints(),
     );
