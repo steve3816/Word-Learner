@@ -650,7 +650,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   title: Text('例句（${word.examples.length}）',
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w500)),
-                  initiallyExpanded: false,
+                  initiallyExpanded: true,
                   children: [
                     for (int i = 0; i < word.examples.length; i++) ...[
                       if (i > 0)
