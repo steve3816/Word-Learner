@@ -549,21 +549,28 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ),
         if (word.englishExplanation?.isNotEmpty == true) ...[
           const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  word.englishExplanation!,
-                  style: const TextStyle(
-                      fontSize: 16,
-                      color: AppColors.ink3,
-                      fontStyle: FontStyle.italic),
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: '英文解釋',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    word.englishExplanation!,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.ink3,
+                        fontStyle: FontStyle.italic),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              _speakerBtn(word.englishExplanation!),
-            ],
+                const SizedBox(width: 6),
+                _speakerBtn(word.englishExplanation!),
+              ],
+            ),
           ),
         ],
         if (word.notes?.isNotEmpty == true) ...[
