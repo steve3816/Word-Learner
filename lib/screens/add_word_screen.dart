@@ -418,16 +418,16 @@ class _AddWordScreenState extends State<AddWordScreen> {
     return HSLColor.fromAHSL(1.0, hue, 0.75, 0.45).toColor();
   }
 
-  Widget _speakerBtn(String text) => Material(
+  Widget _speakerBtn(String text, {double size = 26, double iconSize = 13}) => Material(
         color: AppColors.cream2,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
           onTap: () => TtsService.instance.speak(text),
-          child: const SizedBox(
-            width: 26,
-            height: 26,
-            child: Icon(Icons.volume_up_rounded, size: 13, color: AppColors.ink3),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(Icons.volume_up_rounded, size: iconSize, color: AppColors.ink3),
           ),
         ),
       );
@@ -526,25 +526,27 @@ class _AddWordScreenState extends State<AddWordScreen> {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
         // ── Header ───────────────────────────────────────────────
-        Row(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(word.english,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(word.english,
                       style: const TextStyle(
-                          fontSize: 32, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text(word.chinese,
-                      style: const TextStyle(
-                          fontSize: 18, color: AppColors.ink2)),
-                ],
-              ),
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          height: 1.0)),
+                ),
+                const SizedBox(width: 8),
+                _speakerBtn(word.english, size: 32, iconSize: 18),
+              ],
             ),
-            const SizedBox(width: 8),
-            _speakerBtn(word.english),
+            const SizedBox(height: 6),
+            Text(word.chinese,
+                style: const TextStyle(
+                    fontSize: 18, color: AppColors.ink2)),
           ],
         ),
         if (word.englishExplanation?.isNotEmpty == true) ...[
