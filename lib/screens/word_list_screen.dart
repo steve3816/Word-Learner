@@ -360,13 +360,13 @@ class _WordListScreenState extends State<WordListScreen> {
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppColors.purpleSoft
-                            : AppColors.paper,
+                            ? AppColors.surfaceSelected
+                            : AppColors.surface,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: selected
-                              ? AppColors.purpleDark
-                              : AppColors.line,
+                              ? AppColors.primary
+                              : AppColors.border,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -382,7 +382,7 @@ class _WordListScreenState extends State<WordListScreen> {
                         child: Row(
                           children: [
                             Container(
-                                width: 3, color: AppColors.purpleDark),
+                                width: 3, color: AppColors.primary),
                             Expanded(
                               child: Slidable(
                                 key: Key('word_${word.id}'),
@@ -407,7 +407,7 @@ class _WordListScreenState extends State<WordListScreen> {
                                           value: selected,
                                           onChanged: (_) =>
                                               _toggleSelection(word.id!),
-                                          activeColor: AppColors.purpleDark,
+                                          activeColor: AppColors.primary,
                                         )
                                       : null,
                                   title: Text(word.english,
@@ -479,7 +479,7 @@ class _WordListScreenState extends State<WordListScreen> {
                   onPressed:
                       _selectedIds.isEmpty ? null : _moveSelected,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.purpleDark,
+                    backgroundColor: AppColors.primary,
                     minimumSize: const Size.fromHeight(48),
                   ),
                 ),

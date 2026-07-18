@@ -457,13 +457,13 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 color: selected
-                                    ? AppColors.purpleSoft
-                                    : AppColors.paper,
+                                    ? AppColors.surfaceSelected
+                                    : AppColors.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: selected
-                                      ? AppColors.purpleDark
-                                      : AppColors.line,
+                                      ? AppColors.primary
+                                      : AppColors.border,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
@@ -502,7 +502,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                                             value: selected,
                                             onChanged: (_) =>
                                                 _toggleBookSelection(book.id!),
-                                            activeColor: AppColors.purpleDark,
+                                            activeColor: AppColors.primary,
                                           )
                                         : const Icon(Icons.menu_book_rounded),
                                     title: Text(book.name,
@@ -637,7 +637,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                   onPressed:
                       _selectedBookIds.isEmpty ? null : _moveWordsFromSelected,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.purpleDark,
+                    backgroundColor: AppColors.primary,
                     minimumSize: const Size.fromHeight(48),
                   ),
                 ),

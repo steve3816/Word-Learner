@@ -419,7 +419,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
   }
 
   Widget _speakerBtn(String text, {double size = 26, double iconSize = 13}) => Material(
-        color: AppColors.cream2,
+        color: AppColors.surfaceAlt,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
@@ -427,14 +427,14 @@ class _AddWordScreenState extends State<AddWordScreen> {
           child: SizedBox(
             width: size,
             height: size,
-            child: Icon(Icons.volume_up_rounded, size: iconSize, color: AppColors.ink3),
+            child: Icon(Icons.volume_up_rounded, size: iconSize, color: AppColors.textMuted),
           ),
         ),
       );
 
   Widget _circleAddBtn(VoidCallback onPressed) => IconButton(
         icon: const Icon(Icons.add_circle_outline, size: 24),
-        color: AppColors.purpleDark,
+        color: AppColors.primary,
         onPressed: onPressed,
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(),
@@ -454,7 +454,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       icon: const Icon(Icons.auto_fix_high, size: 18),
       onPressed: onPressed,
       style: IconButton.styleFrom(
-        foregroundColor: AppColors.purpleDark,
+        foregroundColor: AppColors.primary,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       padding: const EdgeInsets.all(6),
@@ -466,9 +466,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   Widget _sectionCard({required Widget child}) => DecoratedBox(
         decoration: BoxDecoration(
-          color: AppColors.paper,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.line),
+          border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF2A2530).withValues(alpha: 0.06),
@@ -496,7 +496,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       start = idx + word.length;
     }
     if (start < sentence.length) spans.add(TextSpan(text: sentence.substring(start), style: base));
-    return RichText(text: TextSpan(style: const TextStyle(color: AppColors.ink), children: spans));
+    return RichText(text: TextSpan(style: const TextStyle(color: AppColors.textPrimary), children: spans));
   }
 
   Widget _buildExampleView(ExampleSentence ex) => Column(
@@ -513,7 +513,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
           if (ex.chineseTranslation?.isNotEmpty == true) ...[
             const SizedBox(height: 4),
             Text(ex.chineseTranslation!,
-                style: const TextStyle(fontSize: 13, color: AppColors.ink3)),
+                style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
           ],
         ],
       );
@@ -546,7 +546,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
             const SizedBox(height: 6),
             Text(word.chinese,
                 style: const TextStyle(
-                    fontSize: 18, color: AppColors.ink2)),
+                    fontSize: 18, color: AppColors.textSecondary)),
           ],
         ),
         if (word.englishExplanation?.isNotEmpty == true) ...[
@@ -565,7 +565,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     word.englishExplanation!,
                     style: const TextStyle(
                         fontSize: 14,
-                        color: AppColors.ink3,
+                        color: AppColors.textMuted,
                         fontStyle: FontStyle.italic),
                   ),
                 ),
@@ -613,7 +613,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     const Text('熟練度',
                         style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.ink3,
+                            color: AppColors.textMuted,
                             fontWeight: FontWeight.w500)),
                     const Spacer(),
                     Icon(currentLevel.icon, size: 22),
@@ -621,18 +621,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     Text(currentLevel.label,
                         style: const TextStyle(
                             fontSize: 14,
-                            color: AppColors.ink2,
+                            color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500)),
                     const SizedBox(width: 6),
                     Text('($_proficiency%)',
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.ink3)),
+                            fontSize: 12, color: AppColors.textMuted)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: _proficiency / 100,
-                  backgroundColor: AppColors.line2,
+                  backgroundColor: AppColors.borderSubtle,
                   valueColor: AlwaysStoppedAnimation(_proficiencyBarColor(_proficiency)),
                   borderRadius: BorderRadius.circular(4),
                   minHeight: 4,
@@ -888,7 +888,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   const SizedBox(height: 8),
                   if (_relatedWords.isEmpty)
                     const Text('尚無關聯字',
-                        style: TextStyle(fontSize: 13, color: AppColors.ink3))
+                        style: TextStyle(fontSize: 13, color: AppColors.textMuted))
                   else
                     Wrap(
                       spacing: 8,
@@ -1018,7 +1018,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     children: [
                       Text(
                         '${_wordIndex + 1} / ${_wordList!.length}',
-                        style: const TextStyle(fontSize: 13, color: AppColors.ink3),
+                        style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                       ),
                       if (hasPrev)
                         Align(

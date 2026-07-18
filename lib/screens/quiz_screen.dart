@@ -410,9 +410,9 @@ class _QuizScreenState extends State<QuizScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: AppColors.paper,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.line),
+          border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF2A2530).withValues(alpha: 0.05),
@@ -440,7 +440,7 @@ class _QuizScreenState extends State<QuizScreen> {
                             const TextStyle(fontWeight: FontWeight.w600)),
                     Text(result.question.word.chinese,
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.ink3)),
+                            fontSize: 12, color: AppColors.textMuted)),
                     if (!result.isCorrect) ...[
                       const SizedBox(height: 4),
                       Text('你的答案：${result.userAnswer}',

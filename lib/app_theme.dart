@@ -1,34 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Color tokens (Soft Tech design system) ─────────────────────────────────
+// ── Palette (Layer 1): raw colors, named by how they look ──────────────────
+// Only colors actually in use — nothing here is decorative/unused.
+abstract class AppPalette {
+  // Warm cream/charcoal neutrals
+  static const linen         = Color(0xFFF4F1EA);
+  static const linenDark     = Color(0xFFEBE7DE);
+  static const ivory         = Color(0xFFFBF9F4);
+  static const charcoal      = Color(0xFF2A2530);
+  static const charcoalSoft  = Color(0xFF5B5462);
+  static const charcoalMuted = Color(0xFF8C8493);
+  static const charcoal10    = Color(0x1A2A2530); // charcoal @ 10% alpha
+  static const charcoal5     = Color(0x0D2A2530); // charcoal @ 5% alpha
+
+  // Greens
+  static const emerald       = Color(0xFF2A7A4B); // deep emerald
+  static const emeraldBright = Color(0xFF3E9E6A); // bright emerald
+  static const emeraldPale   = Color(0xFFE8F5EC); // pale mint
+}
+
+// ── Semantic tokens (Layer 2): named by business role ───────────────────────
 abstract class AppColors {
-  static const cream      = Color(0xFFF4F1EA);
-  static const cream2     = Color(0xFFEBE7DE);
-  static const paper      = Color(0xFFFBF9F4);
-  static const ink        = Color(0xFF2A2530);
-  static const ink2       = Color(0xFF5B5462);
-  static const ink3       = Color(0xFF8C8493);
-  static const line       = Color(0x1A2A2530); // 10% ink
-  static const line2      = Color(0x0D2A2530); // 5% ink
+  static const background      = AppPalette.linen;      // scaffold/app bar
+  static const surface         = AppPalette.ivory;       // cards, fields, sheets
+  static const surfaceAlt      = AppPalette.linenDark;    // secondary chip/button fill
+  static const surfaceSelected = AppPalette.emeraldPale;  // selected list row
 
-  static const purple     = Color(0xFF8DC9A0); // soft green
-  static const purpleDark = Color(0xFF2A7A4B); // deep emerald (primary)
-  static const purpleSoft = Color(0xFFE8F5EC); // pale green
+  static const textPrimary   = AppPalette.charcoal;
+  static const textSecondary = AppPalette.charcoalSoft;
+  static const textMuted     = AppPalette.charcoalMuted;
 
-  static const pink       = Color(0xFF5BB57A); // medium green
-  static const pinkDark   = Color(0xFF3E9E6A); // bright emerald (gradient end)
-  static const pinkSoft   = Color(0xFFEDF7F1); // very pale green
+  static const border       = AppPalette.charcoal10;
+  static const borderSubtle = AppPalette.charcoal5;
 
-  static const blue       = Color(0xFFA8C5E0);
-  static const blueDark   = Color(0xFF6E97BC);
-  static const blueSoft   = Color(0xFFE5EEF7);
-
-  static const amber      = Color(0xFFF0D4A8);
-  static const amberSoft  = Color(0xFFFAEFDD);
-
-  static const mint       = Color(0xFFB8DDC8);
-  static const mintSoft   = Color(0xFFE6F2EC);
+  static const primary   = AppPalette.emerald;
+  static const secondary = AppPalette.emeraldBright;
 }
 
 // ── Theme builder ──────────────────────────────────────────────────────────
@@ -36,78 +43,78 @@ ThemeData buildAppTheme() {
   final base = ThemeData(useMaterial3: true);
   final textTheme =
       GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
-    bodyColor: AppColors.ink,
-    displayColor: AppColors.ink,
+    bodyColor: AppColors.textPrimary,
+    displayColor: AppColors.textPrimary,
   );
 
   return base.copyWith(
     colorScheme: const ColorScheme.light(
-      primary: AppColors.purpleDark,
+      primary: AppColors.primary,
       onPrimary: Colors.white,
-      secondary: AppColors.pinkDark,
+      secondary: AppColors.secondary,
       onSecondary: Colors.white,
-      surface: AppColors.paper,
-      onSurface: AppColors.ink,
-      onSurfaceVariant: AppColors.ink2,
-      outline: AppColors.line,
-      outlineVariant: AppColors.line2,
+      surface: AppColors.surface,
+      onSurface: AppColors.textPrimary,
+      onSurfaceVariant: AppColors.textSecondary,
+      outline: AppColors.border,
+      outlineVariant: AppColors.borderSubtle,
     ),
-    scaffoldBackgroundColor: AppColors.cream,
+    scaffoldBackgroundColor: AppColors.background,
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.cream,
+      backgroundColor: AppColors.background,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: true,
       titleTextStyle: GoogleFonts.plusJakartaSans(
-        color: AppColors.ink,
+        color: AppColors.textPrimary,
         fontSize: 16,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
       ),
-      iconTheme: const IconThemeData(color: AppColors.ink2),
+      iconTheme: const IconThemeData(color: AppColors.textSecondary),
     ),
     cardTheme: const CardThemeData(
-      color: AppColors.paper,
+      color: AppColors.surface,
       elevation: 0,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(18)),
-        side: BorderSide(color: AppColors.line2),
+        side: BorderSide(color: AppColors.borderSubtle),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.paper,
-      labelStyle: const TextStyle(color: AppColors.ink3, fontSize: 13),
-      hintStyle: const TextStyle(color: AppColors.ink3),
+      fillColor: AppColors.surface,
+      labelStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+      hintStyle: const TextStyle(color: AppColors.textMuted),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.line),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.line),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.purpleDark, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.pinkDark),
+        borderSide: const BorderSide(color: AppColors.secondary),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide:
-            const BorderSide(color: AppColors.pinkDark, width: 1.5),
+            const BorderSide(color: AppColors.secondary, width: 1.5),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.purpleDark,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         shadowColor: Colors.transparent,
@@ -122,10 +129,10 @@ ThemeData buildAppTheme() {
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: AppColors.purpleDark),
+      style: TextButton.styleFrom(foregroundColor: AppColors.primary),
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: AppColors.purpleDark,
+      backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       elevation: 0,
       focusElevation: 0,
@@ -136,39 +143,39 @@ ThemeData buildAppTheme() {
     ),
     listTileTheme: const ListTileThemeData(
       titleTextStyle: TextStyle(
-        color: AppColors.ink,
+        color: AppColors.textPrimary,
         fontSize: 15,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.2,
       ),
       subtitleTextStyle: TextStyle(
-        color: AppColors.ink2,
+        color: AppColors.textSecondary,
         fontSize: 13,
         fontWeight: FontWeight.w500,
       ),
     ),
-    dividerTheme: const DividerThemeData(color: AppColors.line2),
+    dividerTheme: const DividerThemeData(color: AppColors.borderSubtle),
     expansionTileTheme: const ExpansionTileThemeData(
-      iconColor: AppColors.ink3,
-      collapsedIconColor: AppColors.ink3,
-      textColor: AppColors.ink,
-      collapsedTextColor: AppColors.ink,
+      iconColor: AppColors.textMuted,
+      collapsedIconColor: AppColors.textMuted,
+      textColor: AppColors.textPrimary,
+      collapsedTextColor: AppColors.textPrimary,
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.ink,
+      backgroundColor: AppColors.textPrimary,
       contentTextStyle: GoogleFonts.plusJakartaSans(
-        color: AppColors.paper,
+        color: AppColors.surface,
         fontSize: 14,
       ),
     ),
     iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(foregroundColor: AppColors.ink2),
+      style: IconButton.styleFrom(foregroundColor: AppColors.textSecondary),
     ),
     radioTheme: RadioThemeData(
       fillColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
-            ? AppColors.purpleDark
-            : AppColors.ink3,
+            ? AppColors.primary
+            : AppColors.textMuted,
       ),
     ),
   );
@@ -248,12 +255,12 @@ class GradientButton extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.purpleDark, AppColors.pinkDark],
+            colors: [AppColors.primary, AppColors.secondary],
           ),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: AppColors.purpleDark.withValues(alpha: 0.35),
+              color: AppColors.primary.withValues(alpha: 0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -297,12 +304,12 @@ class GradientFAB extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.purpleDark, AppColors.pinkDark],
+          colors: [AppColors.primary, AppColors.secondary],
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: AppColors.purpleDark.withValues(alpha: 0.45),
+            color: AppColors.primary.withValues(alpha: 0.45),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
