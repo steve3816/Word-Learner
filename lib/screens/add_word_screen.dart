@@ -24,11 +24,11 @@ class _ExampleEntry {
   bool loadingTranslation;
 
   _ExampleEntry({String sentence = '', String translation = ''})
-      : sentenceCtrl = TextEditingController(text: sentence),
-        translationCtrl = TextEditingController(text: translation),
-        loading = false,
-        loadingSentence = false,
-        loadingTranslation = false;
+    : sentenceCtrl = TextEditingController(text: sentence),
+      translationCtrl = TextEditingController(text: translation),
+      loading = false,
+      loadingSentence = false,
+      loadingTranslation = false;
 
   void dispose() {
     sentenceCtrl.dispose();
@@ -70,26 +70,35 @@ class _AddWordScreenState extends State<AddWordScreen> {
   int _wordIndex = 0;
   List<Word> _relatedWords = [];
 
+  final _viewScrollController = ScrollController();
+  bool _showTitleWord = false;
+
   @override
   void initState() {
     super.initState();
     _isEditing = widget.word == null;
     _currentWord = widget.word;
-    _proficiency = widget.word?.proficiency ?? ProficiencyLevel.veryUnfamiliar.score;
+    _proficiency =
+        widget.word?.proficiency ?? ProficiencyLevel.veryUnfamiliar.score;
     if (widget.word != null) {
       _loadWordList();
       _loadRelatedWords();
     }
+    _viewScrollController.addListener(_onViewScroll);
     _englishCtrl = TextEditingController(text: widget.word?.english ?? '');
     _chineseCtrl = TextEditingController(text: widget.word?.chinese ?? '');
-    _explanationCtrl = TextEditingController(text: widget.word?.englishExplanation ?? '');
+    _explanationCtrl = TextEditingController(
+      text: widget.word?.englishExplanation ?? '',
+    );
     _notesCtrl = TextEditingController(text: widget.word?.notes ?? '');
     if (widget.word != null) {
       for (final ex in widget.word!.examples) {
-        _examples.add(_ExampleEntry(
-          sentence: ex.sentence,
-          translation: ex.chineseTranslation ?? '',
-        ));
+        _examples.add(
+          _ExampleEntry(
+            sentence: ex.sentence,
+            translation: ex.chineseTranslation ?? '',
+          ),
+        );
       }
     }
     _loadSettings();
@@ -101,10 +110,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
     _chineseCtrl.dispose();
     _explanationCtrl.dispose();
     _notesCtrl.dispose();
+    _viewScrollController.dispose();
     for (final e in _examples) {
       e.dispose();
     }
     super.dispose();
+  }
+
+  void _onViewScroll() {
+    final show = _viewScrollController.offset > 80;
+    if (show != _showTitleWord) {
+      setState(() => _showTitleWord = show);
+    }
   }
 
   Future<void> _loadWordList() async {
@@ -120,21 +137,29 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   void _navigateTo(int index) {
     final word = _wordList![index];
-    for (final e in _examples) { e.dispose(); }
+    for (final e in _examples) {
+      e.dispose();
+    }
+    if (_viewScrollController.hasClients) _viewScrollController.jumpTo(0);
     setState(() {
       _currentWord = word;
       _proficiency = word.proficiency;
       _wordIndex = index;
+      _showTitleWord = false;
       _englishCtrl.text = word.english;
       _chineseCtrl.text = word.chinese;
       _explanationCtrl.text = word.englishExplanation ?? '';
       _notesCtrl.text = word.notes ?? '';
       _examples
         ..clear()
-        ..addAll(word.examples.map((ex) => _ExampleEntry(
+        ..addAll(
+          word.examples.map(
+            (ex) => _ExampleEntry(
               sentence: ex.sentence,
               translation: ex.chineseTranslation ?? '',
-            )));
+            ),
+          ),
+        );
     });
     _loadRelatedWords();
   }
@@ -194,8 +219,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
   }
 
   String _buildPrompt(String field) {
-    final base = (_prompts[field] ?? '')
-        .replaceAll(SettingsService.wordPlaceholder, _englishCtrl.text.trim());
+    final base = (_prompts[field] ?? '').replaceAll(
+      SettingsService.wordPlaceholder,
+      _englishCtrl.text.trim(),
+    );
     return field == 'example' ? '$base$_exampleFormatSuffix' : base;
   }
 
@@ -209,7 +236,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
         title: const Text('AI 回應失敗'),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('關閉')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('關閉'),
+          ),
         ],
       ),
     );
@@ -220,7 +250,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
     setState(() => _loadingEnglish = true);
     try {
       final prompt = (_prompts['english'] ?? '').replaceAll(
-          SettingsService.wordPlaceholder, _chineseCtrl.text.trim());
+        SettingsService.wordPlaceholder,
+        _chineseCtrl.text.trim(),
+      );
       final result = await _aiService!.complete(prompt);
       _englishCtrl.text = result.trim();
     } catch (e) {
@@ -327,10 +359,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
     _examples.clear();
     for (final ex in word.examples) {
-      _examples.add(_ExampleEntry(
-        sentence: ex.sentence,
-        translation: ex.chineseTranslation ?? '',
-      ));
+      _examples.add(
+        _ExampleEntry(
+          sentence: ex.sentence,
+          translation: ex.chineseTranslation ?? '',
+        ),
+      );
     }
     setState(() {
       _proficiency = word.proficiency;
@@ -360,8 +394,14 @@ class _AddWordScreenState extends State<AddWordScreen> {
             '例句仍可儲存，但複習時將不會納入出題範圍。',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('返回修改')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('仍要儲存')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('返回修改'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('仍要儲存'),
+            ),
           ],
         ),
       );
@@ -370,12 +410,14 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
     final examples = _examples
         .where((e) => e.sentenceCtrl.text.trim().isNotEmpty)
-        .map((e) => ExampleSentence(
-              sentence: e.sentenceCtrl.text.trim(),
-              chineseTranslation: e.translationCtrl.text.trim().isEmpty
-                  ? null
-                  : e.translationCtrl.text.trim(),
-            ))
+        .map(
+          (e) => ExampleSentence(
+            sentence: e.sentenceCtrl.text.trim(),
+            chineseTranslation: e.translationCtrl.text.trim().isEmpty
+                ? null
+                : e.translationCtrl.text.trim(),
+          ),
+        )
         .toList();
 
     final word = Word(
@@ -418,7 +460,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
     return HSLColor.fromAHSL(1.0, hue, 0.75, 0.45).toColor();
   }
 
-  Widget _speakerBtn(String text, {double size = 26, double iconSize = 13}) => Material(
+  Widget _speakerBtn(String text, {double size = 26, double iconSize = 13}) =>
+      Material(
         color: AppColors.surfaceAlt,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
@@ -427,25 +470,30 @@ class _AddWordScreenState extends State<AddWordScreen> {
           child: SizedBox(
             width: size,
             height: size,
-            child: Icon(Icons.volume_up_rounded, size: iconSize, color: AppColors.textMuted),
+            child: Icon(
+              Icons.volume_up_rounded,
+              size: iconSize,
+              color: AppColors.textMuted,
+            ),
           ),
         ),
       );
 
   Widget _circleAddBtn(VoidCallback onPressed) => IconButton(
-        icon: const Icon(Icons.add_circle_outline, size: 24),
-        color: AppColors.primary,
-        onPressed: onPressed,
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-      );
+    icon: const Icon(Icons.add_circle_outline, size: 24),
+    color: AppColors.primary,
+    onPressed: onPressed,
+    padding: EdgeInsets.zero,
+    constraints: const BoxConstraints(),
+  );
 
   Widget _aiIconBtn({required bool loading, required VoidCallback onPressed}) {
     if (loading) {
       return const Padding(
         padding: EdgeInsets.all(6),
         child: SizedBox(
-          width: 18, height: 18,
+          width: 18,
+          height: 18,
           child: CircularProgressIndicator(strokeWidth: 1.5),
         ),
       );
@@ -465,20 +513,20 @@ class _AddWordScreenState extends State<AddWordScreen> {
   // ── View mode ────────────────────────────────────────────────
 
   Widget _sectionCard({required Widget child}) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF2A2530).withValues(alpha: 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.border),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF2A2530).withValues(alpha: 0.06),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
         ),
-        child: child,
-      );
+      ],
+    ),
+    child: child,
+  );
 
   Widget _highlightWord(String sentence, String word) {
     const base = TextStyle(fontSize: 14);
@@ -488,202 +536,253 @@ class _AddWordScreenState extends State<AddWordScreen> {
     int start = 0;
     int idx;
     while ((idx = lower.indexOf(target, start)) != -1) {
-      if (idx > start) spans.add(TextSpan(text: sentence.substring(start, idx), style: base));
-      spans.add(TextSpan(
-        text: sentence.substring(idx, idx + word.length),
-        style: base.copyWith(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
-      ));
+      if (idx > start) {
+        spans.add(TextSpan(text: sentence.substring(start, idx), style: base));
+      }
+      spans.add(
+        TextSpan(
+          text: sentence.substring(idx, idx + word.length),
+          style: base.copyWith(
+            fontWeight: FontWeight.bold,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
       start = idx + word.length;
     }
-    if (start < sentence.length) spans.add(TextSpan(text: sentence.substring(start), style: base));
-    return RichText(text: TextSpan(style: const TextStyle(color: AppColors.textPrimary), children: spans));
+    if (start < sentence.length) {
+      spans.add(TextSpan(text: sentence.substring(start), style: base));
+    }
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(color: AppColors.textPrimary),
+        children: spans,
+      ),
+    );
   }
 
   Widget _buildExampleView(ExampleSentence ex) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _highlightWord(ex.sentence, _currentWord!.english)),
-              const SizedBox(width: 6),
-              _speakerBtn(ex.sentence),
-            ],
-          ),
-          if (ex.chineseTranslation?.isNotEmpty == true) ...[
-            const SizedBox(height: 4),
-            Text(ex.chineseTranslation!,
-                style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
-          ],
+          Expanded(child: _highlightWord(ex.sentence, _currentWord!.english)),
+          const SizedBox(width: 6),
+          _speakerBtn(ex.sentence),
         ],
-      );
+      ),
+      if (ex.chineseTranslation?.isNotEmpty == true) ...[
+        const SizedBox(height: 4),
+        Text(
+          ex.chineseTranslation!,
+          style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+        ),
+      ],
+    ],
+  );
 
   Widget _buildViewMode() {
     final word = _currentWord!;
     final currentLevel = ProficiencyLevel.fromScore(_proficiency);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-      children: [
-        // ── Header ───────────────────────────────────────────────
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(word.english,
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (notification) {
+        _onViewScroll();
+        return false;
+      },
+      child: ListView(
+        controller: _viewScrollController,
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+        children: [
+          // ── Header ───────────────────────────────────────────────
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      word.english,
                       style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          height: 1.0)),
-                ),
-                const SizedBox(width: 8),
-                _speakerBtn(word.english, size: 32, iconSize: 18),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(word.chinese,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _speakerBtn(word.english, size: 32, iconSize: 18),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                word.chinese,
                 style: const TextStyle(
-                    fontSize: 18, color: AppColors.textSecondary)),
-          ],
-        ),
-        if (word.englishExplanation?.isNotEmpty == true) ...[
-          const SizedBox(height: 10),
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: '英文解釋',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    word.englishExplanation!,
-                    style: const TextStyle(
+                  fontSize: 18,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          if (word.englishExplanation?.isNotEmpty == true) ...[
+            const SizedBox(height: 10),
+            InputDecorator(
+              decoration: const InputDecoration(
+                labelText: '英文解釋',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      word.englishExplanation!,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textMuted,
-                        fontStyle: FontStyle.italic),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                _speakerBtn(word.englishExplanation!),
-              ],
+                  const SizedBox(width: 6),
+                  _speakerBtn(word.englishExplanation!),
+                ],
+              ),
             ),
-          ),
-        ],
-        if (word.notes?.isNotEmpty == true) ...[
-          const SizedBox(height: 10),
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: '備注',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+          ],
+          if (word.notes?.isNotEmpty == true) ...[
+            const SizedBox(height: 10),
+            InputDecorator(
+              decoration: const InputDecoration(
+                labelText: '備注',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+              ),
+              child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
             ),
-            child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
-          ),
-        ],
-        if (_relatedWords.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: '關聯字',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 12),
-            ),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _relatedWords
-                  .map((rw) => InputChip(
-                        label: Text(rw.english,
-                            style: const TextStyle(fontSize: 15)),
+          ],
+          if (_relatedWords.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            InputDecorator(
+              decoration: const InputDecoration(
+                labelText: '關聯字',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 12),
+              ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _relatedWords
+                    .map(
+                      (rw) => InputChip(
+                        label: Text(
+                          rw.english,
+                          style: const TextStyle(fontSize: 15),
+                        ),
                         backgroundColor: AppColors.surfaceAlt,
                         side: BorderSide.none,
                         onPressed: () => _openRelatedWord(rw),
-                      ))
-                  .toList(),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
-          ),
-        ],
-        const SizedBox(height: 20),
+          ],
+          const SizedBox(height: 20),
 
-        // ── Proficiency ───────────────────────────────────────────
-        _sectionCard(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('熟練度',
+          // ── Proficiency ───────────────────────────────────────────
+          _sectionCard(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        '熟練度',
                         style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textMuted,
-                            fontWeight: FontWeight.w500)),
-                    const Spacer(),
-                    Icon(currentLevel.icon, size: 22),
-                    const SizedBox(width: 8),
-                    Text(currentLevel.label,
+                          fontSize: 14,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(currentLevel.icon, size: 22),
+                      const SizedBox(width: 8),
+                      Text(
+                        currentLevel.label,
                         style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500)),
-                    const SizedBox(width: 6),
-                    Text('($_proficiency%)',
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '($_proficiency%)',
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.textMuted)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: _proficiency / 100,
-                  backgroundColor: AppColors.borderSubtle,
-                  valueColor: AlwaysStoppedAnimation(_proficiencyBarColor(_proficiency)),
-                  borderRadius: BorderRadius.circular(4),
-                  minHeight: 4,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── Examples ─────────────────────────────────────────────
-        if (word.examples.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: _sectionCard(
-              child: Theme(
-                data: Theme.of(context)
-                    .copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  tilePadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  childrenPadding:
-                      const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  title: Text('例句（${word.examples.length}）',
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500)),
-                  initiallyExpanded: true,
-                  children: [
-                    for (int i = 0; i < word.examples.length; i++) ...[
-                      if (i > 0)
-                        const Divider(height: 20, thickness: 0.5),
-                      _buildExampleView(word.examples[i]),
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
                     ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: _proficiency / 100,
+                    backgroundColor: AppColors.borderSubtle,
+                    valueColor: AlwaysStoppedAnimation(
+                      _proficiencyBarColor(_proficiency),
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                    minHeight: 4,
+                  ),
+                ],
               ),
             ),
           ),
-        ],
 
-      ],
+          // ── Examples ─────────────────────────────────────────────
+          if (word.examples.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: _sectionCard(
+                child: Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    title: Text(
+                      '例句（${word.examples.length}）',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    initiallyExpanded: true,
+                    children: [
+                      for (int i = 0; i < word.examples.length; i++) ...[
+                        if (i > 0) const Divider(height: 20, thickness: 0.5),
+                        _buildExampleView(word.examples[i]),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -700,8 +799,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
           children: [
             Row(
               children: [
-                Text('例句 ${index + 1}',
-                    style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                Text(
+                  '例句 ${index + 1}',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
                 const Spacer(),
                 if (_aiService != null)
                   ValueListenableBuilder<TextEditingValue>(
@@ -802,12 +903,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _englishCtrl,
-                        decoration: const InputDecoration(
-                          labelText: '英文單字 *',
-                        ),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? '請輸入英文單字'
-                            : null,
+                        decoration: const InputDecoration(labelText: '英文單字 *'),
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? '請輸入英文單字' : null,
                       ),
                     ),
                     if (_aiService != null) ...[
@@ -832,9 +930,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       child: TextFormField(
                         controller: _chineseCtrl,
                         decoration: const InputDecoration(labelText: '中文意思 *'),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? '請輸入中文意思'
-                            : null,
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? '請輸入中文意思' : null,
                       ),
                     ),
                     if (_aiService != null) ...[
@@ -888,33 +985,46 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('關聯字',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w500)),
+                      const Text(
+                        '關聯字',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                       const Spacer(),
                       _circleAddBtn(_openRelationPicker),
                     ],
                   ),
                   const SizedBox(height: 8),
                   if (_relatedWords.isEmpty)
-                    const Text('尚無關聯字',
-                        style: TextStyle(fontSize: 13, color: AppColors.textMuted))
+                    const Text(
+                      '尚無關聯字',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    )
                   else
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: _relatedWords
-                          .map((rw) => InputChip(
-                                label: Text(rw.english),
-                                onDeleted: () => _removeRelation(rw),
-                                deleteIcon: const Icon(Icons.close, size: 16),
-                              ))
+                          .map(
+                            (rw) => InputChip(
+                              label: Text(rw.english),
+                              onDeleted: () => _removeRelation(rw),
+                              deleteIcon: const Icon(Icons.close, size: 16),
+                            ),
+                          )
                           .toList(),
                     ),
                 ],
                 const SizedBox(height: 20),
-                const Text('熟練度',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                const Text(
+                  '熟練度',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -924,7 +1034,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       onTap: () => setState(() => _proficiency = level.score),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: isSelected
@@ -938,8 +1050,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
                           children: [
                             Icon(level.icon, size: 32),
                             const SizedBox(height: 4),
-                            Text(level.label,
-                                style: const TextStyle(fontSize: 11)),
+                            Text(
+                              level.label,
+                              style: const TextStyle(fontSize: 11),
+                            ),
                           ],
                         ),
                       ),
@@ -949,9 +1063,13 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    const Text('例句',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500)),
+                    const Text(
+                      '例句',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const Spacer(),
                     _circleAddBtn(_addExample),
                   ],
@@ -984,7 +1102,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
     final AppBar appBar;
     if (!_isEditing) {
       appBar = AppBar(
-        title: const Text(''),
+        title: AnimatedOpacity(
+          opacity: _showTitleWord ? 1 : 0,
+          duration: const Duration(milliseconds: 150),
+          child: Text(_currentWord?.english ?? ''),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
@@ -996,12 +1118,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     } else if (widget.word != null) {
       appBar = AppBar(
         title: const Text('編輯單字'),
-        actions: [
-          TextButton(
-            onPressed: _cancelEdit,
-            child: const Text('取消'),
-          ),
-        ],
+        actions: [TextButton(onPressed: _cancelEdit, child: const Text('取消'))],
       );
     } else {
       appBar = AppBar(title: const Text('新增單字'));
@@ -1028,7 +1145,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     children: [
                       Text(
                         '${_wordIndex + 1} / ${_wordList!.length}',
-                        style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                       if (hasPrev)
                         Align(
