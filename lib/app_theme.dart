@@ -60,6 +60,13 @@ ThemeData buildAppTheme() {
       outlineVariant: AppColors.borderSubtle,
     ),
     scaffoldBackgroundColor: AppColors.background,
+    // Opt out of predictive back: any predictive-back builder live-tracks the
+    // drag gesture, which always renders the current page as a moving/draggable
+    // layer. The system edge-swipe-to-go-back gesture still works without it —
+    // it just plays this fixed pop transition instead of a live preview.
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {TargetPlatform.android: ZoomPageTransitionsBuilder()},
+    ),
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
