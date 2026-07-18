@@ -588,15 +588,25 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ],
         if (_relatedWords.isNotEmpty) ...[
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _relatedWords
-                .map((rw) => InputChip(
-                      label: Text(rw.english),
-                      onPressed: () => _openRelatedWord(rw),
-                    ))
-                .toList(),
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: '關聯字',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 12),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _relatedWords
+                  .map((rw) => InputChip(
+                        label: Text(rw.english,
+                            style: const TextStyle(fontSize: 15)),
+                        backgroundColor: AppColors.surfaceAlt,
+                        side: BorderSide.none,
+                        onPressed: () => _openRelatedWord(rw),
+                      ))
+                  .toList(),
+            ),
           ),
         ],
         const SizedBox(height: 20),
