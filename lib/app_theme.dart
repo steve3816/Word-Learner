@@ -8,6 +8,7 @@ abstract class AppPalette {
   static const linen         = Color(0xFFF4F1EA);
   static const linenDark     = Color(0xFFEBE7DE);
   static const ivory         = Color(0xFFFBF9F4);
+  static const white         = Color(0xFFFFFFFF);
   static const charcoal      = Color(0xFF2A2530);
   static const charcoalSoft  = Color(0xFF5B5462);
   static const charcoalMuted = Color(0xFF8C8493);
@@ -23,7 +24,7 @@ abstract class AppPalette {
 // ── Semantic tokens (Layer 2): named by business role ───────────────────────
 abstract class AppColors {
   static const background      = AppPalette.linen;      // scaffold/app bar
-  static const surface         = AppPalette.ivory;       // cards, fields, sheets
+  static const surface         = AppPalette.white;        // cards, fields, sheets
   static const surfaceAlt      = AppPalette.linenDark;    // secondary chip/button fill
   static const surfaceSelected = AppPalette.emeraldPale;  // selected list row
 

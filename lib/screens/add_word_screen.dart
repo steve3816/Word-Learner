@@ -561,25 +561,36 @@ class _AddWordScreenState extends State<AddWordScreen> {
     );
   }
 
-  Widget _buildExampleView(ExampleSentence ex) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
+  Widget _buildExampleView(ExampleSentence ex) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: AppColors.surfaceSelected,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(10),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _highlightWord(ex.sentence, _currentWord!.english)),
-          const SizedBox(width: 6),
-          _speakerBtn(ex.sentence),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _highlightWord(ex.sentence, _currentWord!.english),
+              ),
+              const SizedBox(width: 6),
+              _speakerBtn(ex.sentence),
+            ],
+          ),
+          if (ex.chineseTranslation?.isNotEmpty == true) ...[
+            const SizedBox(height: 4),
+            Text(
+              ex.chineseTranslation!,
+              style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+            ),
+          ],
         ],
       ),
-      if (ex.chineseTranslation?.isNotEmpty == true) ...[
-        const SizedBox(height: 4),
-        Text(
-          ex.chineseTranslation!,
-          style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-        ),
-      ],
-    ],
+    ),
   );
 
   Widget _buildViewMode() {
@@ -772,7 +783,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     initiallyExpanded: true,
                     children: [
                       for (int i = 0; i < word.examples.length; i++) ...[
-                        if (i > 0) const Divider(height: 20, thickness: 0.5),
+                        if (i > 0) const SizedBox(height: 10),
                         _buildExampleView(word.examples[i]),
                       ],
                     ],
