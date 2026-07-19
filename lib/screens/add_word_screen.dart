@@ -616,7 +616,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   _speakerBtn(word.english, size: 32, iconSize: 18),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 20),
               Text(
                 word.chinese,
                 style: const TextStyle(
@@ -627,7 +627,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
             ],
           ),
           if (word.englishExplanation?.isNotEmpty == true) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             InputDecorator(
               decoration: const InputDecoration(
                 labelText: '英文解釋',
