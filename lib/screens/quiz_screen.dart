@@ -7,6 +7,7 @@ import '../services/settings_service.dart';
 import '../services/tts_service.dart';
 import '../utils/list_util.dart';
 import '../utils/proficiency_util.dart';
+import '../widgets/banner_ad_widget.dart';
 
 enum _QuizType {
   enToCn,
@@ -396,6 +397,8 @@ class _QuizScreenState extends State<QuizScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text('回到單字本'),
             ),
+            const SizedBox(height: 16),
+            const Center(child: BannerAdWidget()),
           ],
         ),
       ),
