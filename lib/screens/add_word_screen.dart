@@ -1139,50 +1139,56 @@ class _AddWordScreenState extends State<AddWordScreen> {
     final hasPrev = hasList && _wordIndex > 0;
     final hasNext = hasList && _wordIndex < _wordList!.length - 1;
 
-    return Scaffold(
-      extendBody: true,
-      appBar: appBar,
-      body: DotGridBackground(
-        child: _isEditing ? _buildEditMode() : _buildViewMode(),
-      ),
-      bottomNavigationBar: hasList
-          ? Material(
-              color: Colors.transparent,
-              child: SafeArea(
-                child: SizedBox(
-                  height: 56,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Text(
-                        '${_wordIndex + 1} / ${_wordList!.length}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                      if (hasPrev)
-                        Align(
-                          alignment: const Alignment(-0.5, 0),
-                          child: IconButton(
-                            icon: const Icon(Icons.chevron_left),
-                            onPressed: () => _navigateTo(_wordIndex - 1),
-                          ),
-                        ),
-                      if (hasNext)
-                        Align(
-                          alignment: const Alignment(0.5, 0),
-                          child: IconButton(
-                            icon: const Icon(Icons.chevron_right),
-                            onPressed: () => _navigateTo(_wordIndex + 1),
-                          ),
-                        ),
-                    ],
+    final Widget bodyContent;
+    if (_isEditing) {
+      bodyContent = _buildEditMode();
+    } else if (hasList) {
+      bodyContent = Column(
+        children: [
+          Expanded(child: _buildViewMode()),
+          SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 56,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(
+                    '${_wordIndex + 1} / ${_wordList!.length}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                    ),
                   ),
-                ),
+                  if (hasPrev)
+                    Align(
+                      alignment: const Alignment(-0.5, 0),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () => _navigateTo(_wordIndex - 1),
+                      ),
+                    ),
+                  if (hasNext)
+                    Align(
+                      alignment: const Alignment(0.5, 0),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () => _navigateTo(_wordIndex + 1),
+                      ),
+                    ),
+                ],
               ),
-            )
-          : null,
+            ),
+          ),
+        ],
+      );
+    } else {
+      bodyContent = _buildViewMode();
+    }
+
+    return Scaffold(
+      appBar: appBar,
+      body: DotGridBackground(child: bodyContent),
     );
   }
 }
