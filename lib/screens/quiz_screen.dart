@@ -315,8 +315,16 @@ class _QuizScreenState extends State<QuizScreen> {
                     : null,
                 decoration: InputDecoration(
                   labelText: '你的答案',
-                  filled: _answered,
-                  fillColor: _answered ? Colors.grey.shade100 : null,
+                  filled: true,
+                  fillColor: Colors.white,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 onSubmitted: _answered ? null : (_) => _submit(),
               ),
