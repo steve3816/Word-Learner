@@ -293,15 +293,7 @@ class _QuizScreenState extends State<QuizScreen> {
                             const SizedBox(height: 8),
                             Align(
                               alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(Icons.volume_up_rounded,
-                                    size: 20),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: '朗讀解釋',
-                                onPressed: () => TtsService.instance
-                                    .speak(question.prompt),
-                              ),
+                              child: _speakerBtn(question.prompt),
                             ),
                           ],
                         )
@@ -364,6 +356,25 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
   }
+
+  Widget _speakerBtn(String text, {double size = 26, double iconSize = 13}) =>
+      Material(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () => TtsService.instance.speak(text),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(
+              Icons.volume_up_rounded,
+              size: iconSize,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ),
+      );
 
   Widget _buildResultScreen() {
     final total = _questions.length;
