@@ -301,11 +301,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
                 children: [
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 3,
-                    shadowColor: Colors.black26,
-                    child: ExpansionTile(
+                  _settingsCard(
+                    ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.smart_toy_outlined),
@@ -336,11 +333,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 3,
-                    shadowColor: Colors.black26,
-                    child: ExpansionTile(
+                  _settingsCard(
+                    ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.vpn_key_outlined),
@@ -375,11 +369,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 3,
-                    shadowColor: Colors.black26,
-                    child: ExpansionTile(
+                  _settingsCard(
+                    ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.edit_note),
@@ -459,11 +450,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 3,
-                    shadowColor: Colors.black26,
-                    child: ExpansionTile(
+                  _settingsCard(
+                    ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.folder_open),
@@ -488,11 +476,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 3,
-                    shadowColor: Colors.black26,
-                    child: ExpansionTile(
+                  _settingsCard(
+                    ExpansionTile(
                       shape: const Border(),
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.school_outlined),
