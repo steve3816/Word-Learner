@@ -1,8 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
+import '../services/ad_service.dart';
 import '../services/settings_service.dart';
 import '../services/tts_service.dart';
 import '../utils/list_util.dart';
@@ -71,17 +73,53 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _isCorrect = false;
   bool _loading = true;
 
+  InterstitialAd? _interstitialAd;
+  bool _showInterstitialOnExit = false;
+
   @override
   void initState() {
     super.initState();
     _loadQuestions();
+    _loadInterstitialAd();
   }
 
   @override
   void dispose() {
     _answerCtrl.dispose();
     _answerFocus.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdService.interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) => _interstitialAd = ad,
+        onAdFailedToLoad: (_) => _interstitialAd = null,
+      ),
+    );
+  }
+
+  void _leaveResultScreen() {
+    final ad = _interstitialAd;
+    if (!_showInterstitialOnExit || ad == null) {
+      Navigator.pop(context);
+      return;
+    }
+    _interstitialAd = null;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        if (mounted) Navigator.pop(context);
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        if (mounted) Navigator.pop(context);
+      },
+    );
+    ad.show();
   }
 
   Future<void> _loadQuestions() async {
@@ -172,13 +210,18 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
-  void _next() {
+  void _next() async {
     _answerFocus.unfocus();
     if (_current + 1 >= _questions.length) {
       for (final r in _results) {
         _db.updateWord(r.question.word.copyWith(proficiency: r.newProficiency));
       }
-      setState(() => _current = _questions.length);
+      final shouldShowAd = await AdService.recordQuizCompletion();
+      if (!mounted) return;
+      setState(() {
+        _current = _questions.length;
+        _showInterstitialOnExit = shouldShowAd;
+      });
     } else {
       setState(() {
         _current++;
@@ -413,7 +456,7 @@ class _QuizScreenState extends State<QuizScreen> {
             for (final result in _results) _buildResultRow(result),
             const SizedBox(height: 16),
             GradientButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _leaveResultScreen,
               child: const Text('回到單字本'),
             ),
             const SizedBox(height: 16),
