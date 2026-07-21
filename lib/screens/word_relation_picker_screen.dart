@@ -4,7 +4,7 @@ import '../models/word.dart';
 
 class WordRelationPickerScreen extends StatefulWidget {
   final int wordBookId;
-  final int excludeWordId;
+  final int? excludeWordId;
   final Set<int> alreadyRelatedIds;
 
   const WordRelationPickerScreen({

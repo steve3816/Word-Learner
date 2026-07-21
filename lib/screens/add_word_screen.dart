@@ -173,27 +173,38 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   Future<void> _openRelationPicker() async {
     final word = _currentWord;
-    if (word?.id == null) return;
+    final wordBookId = word?.wordBookId ?? widget.wordBookId!;
     final selected = await Navigator.push<List<int>>(
       context,
       MaterialPageRoute(
         builder: (_) => WordRelationPickerScreen(
-          wordBookId: word!.wordBookId,
-          excludeWordId: word.id!,
+          wordBookId: wordBookId,
+          excludeWordId: word?.id,
           alreadyRelatedIds: _relatedWords.map((w) => w.id!).toSet(),
         ),
       ),
     );
     if (selected == null || selected.isEmpty) return;
-    await _db.addWordRelations(word!.id!, selected);
-    await _loadRelatedWords();
+    if (word?.id != null) {
+      // 編輯既有單字：立刻寫入關聯。
+      await _db.addWordRelations(word!.id!, selected);
+      await _loadRelatedWords();
+    } else {
+      // 新增單字尚未存檔、沒有 id，先記在本機，存檔時才一併寫入關聯。
+      final picked = await Future.wait(selected.map(_db.getWordById));
+      setState(() => _relatedWords = [..._relatedWords, ...picked.whereType<Word>()]);
+    }
   }
 
   Future<void> _removeRelation(Word relatedWord) async {
     final id = _currentWord?.id;
-    if (id == null || relatedWord.id == null) return;
-    await _db.removeWordRelation(id, relatedWord.id!);
-    await _loadRelatedWords();
+    if (id != null && relatedWord.id != null) {
+      await _db.removeWordRelation(id, relatedWord.id!);
+      await _loadRelatedWords();
+    } else {
+      setState(() => _relatedWords =
+          _relatedWords.where((w) => w.id != relatedWord.id).toList());
+    }
   }
 
   Future<void> _openRelatedWord(Word relatedWord) async {
@@ -435,7 +446,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
     );
     try {
       if (_currentWord == null) {
-        await _db.insertWord(word);
+        final newId = await _db.insertWord(word);
+        if (_relatedWords.isNotEmpty) {
+          await _db.addWordRelations(
+              newId, _relatedWords.map((w) => w.id!).toList());
+        }
         WidgetService.syncWords();
         if (mounted) Navigator.pop(context);
       } else {
@@ -992,45 +1007,43 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   minLines: 1,
                   maxLines: null,
                 ),
-                if (_currentWord?.id != null) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Text(
-                        '關聯字',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Spacer(),
-                      _circleAddBtn(_openRelationPicker),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (_relatedWords.isEmpty)
+                const SizedBox(height: 12),
+                Row(
+                  children: [
                     const Text(
-                      '尚無關聯字',
+                      '關聯字',
                       style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textMuted,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
-                    )
-                  else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _relatedWords
-                          .map(
-                            (rw) => InputChip(
-                              label: Text(rw.english),
-                              onDeleted: () => _removeRelation(rw),
-                              deleteIcon: const Icon(Icons.close, size: 16),
-                            ),
-                          )
-                          .toList(),
                     ),
-                ],
+                    const Spacer(),
+                    _circleAddBtn(_openRelationPicker),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (_relatedWords.isEmpty)
+                  const Text(
+                    '尚無關聯字',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _relatedWords
+                        .map(
+                          (rw) => InputChip(
+                            label: Text(rw.english),
+                            onDeleted: () => _removeRelation(rw),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                          ),
+                        )
+                        .toList(),
+                  ),
                 const SizedBox(height: 20),
                 const Text(
                   '熟練度',
