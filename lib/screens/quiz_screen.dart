@@ -91,7 +91,8 @@ class _QuizScreenState extends State<QuizScreen> {
     super.dispose();
   }
 
-  void _loadInterstitialAd() {
+  Future<void> _loadInterstitialAd() async {
+    if (await AdService.isAdFree()) return;
     InterstitialAd.load(
       adUnitId: AdService.interstitialAdUnitId,
       request: const AdRequest(),
@@ -217,10 +218,11 @@ class _QuizScreenState extends State<QuizScreen> {
         _db.updateWord(r.question.word.copyWith(proficiency: r.newProficiency));
       }
       final shouldShowAd = await AdService.recordQuizCompletion();
+      final adFree = await AdService.isAdFree();
       if (!mounted) return;
       setState(() {
         _current = _questions.length;
-        _showInterstitialOnExit = shouldShowAd;
+        _showInterstitialOnExit = shouldShowAd && !adFree;
       });
     } else {
       setState(() {

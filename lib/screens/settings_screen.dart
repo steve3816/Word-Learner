@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../app_config.dart';
 import '../app_theme.dart';
+import '../services/ad_service.dart';
 import '../services/ai_service.dart';
 import '../services/export_service.dart';
 import '../services/settings_service.dart';
@@ -24,6 +27,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _quizMaxProficiency = ProficiencyLevel.proficient.score;
   bool _loading = true;
 
+  RewardedAd? _rewardedAd;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _promptFocusNodes[field] = node;
     }
     _loadSettings();
+    _loadRewardedAd();
   }
 
   @override
@@ -53,8 +59,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     for (final n in _promptFocusNodes.values) {
       n.dispose();
     }
+    _rewardedAd?.dispose();
     super.dispose();
   }
+
+  void _loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: AdService.rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) => _rewardedAd = ad,
+        onAdFailedToLoad: (_) => _rewardedAd = null,
+      ),
+    );
+  }
+
+  void _watchRewardedAd() {
+    final ad = _rewardedAd;
+    if (ad == null) return;
+    _rewardedAd = null;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _loadRewardedAd();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _loadRewardedAd();
+      },
+    );
+    ad.show(
+      onUserEarnedReward: (ad, reward) async {
+        await AdService.grantAdFree();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('謝謝支持！接下來的廣告已為你移除')),
+        );
+      },
+    );
+  }
+
+  Widget _settingsCard(Widget expansionTile) => Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 3,
+        shadowColor: Colors.black26,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+          ),
+          child: expansionTile,
+        ),
+      );
 
   Future<void> _loadSettings() async {
     final provider = await _settings.getSelectedProvider();
@@ -513,6 +569,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shadowColor: Colors.black26,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.favorite_border),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '支持開發者',
+                                  style: TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '看一支廣告支持我們，接下來 ${AppConfig.adFreeDuration.inHours} 小時內都不會顯示廣告',
+                                  style: const TextStyle(
+                                      fontSize: 13, color: AppColors.textMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: _watchRewardedAd,
+                            child: const Text('看廣告'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
