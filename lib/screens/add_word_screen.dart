@@ -691,29 +691,53 @@ class _AddWordScreenState extends State<AddWordScreen> {
             ),
           ],
           if (_relatedWords.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: '關聯字',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 12),
-              ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _relatedWords
-                    .map(
-                      (rw) => InputChip(
-                        label: Text(
-                          rw.english,
-                          style: const TextStyle(fontSize: 15),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: _sectionCard(
+                child: Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    title: Text(
+                      '關聯字（${_relatedWords.length}）',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    initiallyExpanded: false,
+                    children: [
+                      for (int i = 0; i < _relatedWords.length; i++) ...[
+                        if (i > 0)
+                          const Divider(height: 1, color: AppColors.borderSubtle),
+                        InkWell(
+                          onTap: () => _openRelatedWord(_relatedWords[i]),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              children: [
+                                Text(
+                                  _relatedWords[i].english,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  _relatedWords[i].chinese,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        backgroundColor: AppColors.surfaceAlt,
-                        side: BorderSide.none,
-                        onPressed: () => _openRelatedWord(rw),
-                      ),
-                    )
-                    .toList(),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -1008,42 +1032,72 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   maxLines: null,
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Text(
-                      '關聯字',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: _sectionCard(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                '關聯字',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                              ),
+                              const Spacer(),
+                              _circleAddBtn(_openRelationPicker),
+                            ],
+                          ),
+                          if (_relatedWords.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: Text(
+                                '尚無關聯字',
+                                style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                              ),
+                            )
+                          else
+                            for (int i = 0; i < _relatedWords.length; i++) ...[
+                              if (i > 0)
+                                const Divider(height: 1, color: AppColors.borderSubtle),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      _relatedWords[i].english,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      _relatedWords[i].chinese,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, size: 18),
+                                      color: AppColors.textMuted,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () => _removeRelation(_relatedWords[i]),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    _circleAddBtn(_openRelationPicker),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (_relatedWords.isEmpty)
-                  const Text(
-                    '尚無關聯字',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textMuted,
-                    ),
-                  )
-                else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _relatedWords
-                        .map(
-                          (rw) => InputChip(
-                            label: Text(rw.english),
-                            onDeleted: () => _removeRelation(rw),
-                            deleteIcon: const Icon(Icons.close, size: 16),
-                          ),
-                        )
-                        .toList(),
                   ),
+                ),
                 const SizedBox(height: 20),
                 const Text(
                   '熟練度',
