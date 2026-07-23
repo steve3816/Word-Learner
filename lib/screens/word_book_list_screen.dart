@@ -601,10 +601,17 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                                         size: 28),
                                     title: Text(word.english),
                                     subtitle: Text(word.chinese),
-                                    trailing: Text(bookName,
-                                        style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey)),
+                                    trailing: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 80),
+                                      child: Text(bookName,
+                                          textAlign: TextAlign.end,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey)),
+                                    ),
                                     onTap: () async {
                                       _closeSearch();
                                       await Navigator.push(
