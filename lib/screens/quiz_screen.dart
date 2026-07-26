@@ -98,6 +98,7 @@ class _QuizScreenState extends State<QuizScreen> {
     final due = await AdService.recordQuizStart();
     if (!due || await AdService.isAdFree()) return;
     if (mounted) setState(() => _awaitingAd = true);
+    await AdService.ensureInitialized();
 
     final completer = Completer<void>();
     InterstitialAd.load(

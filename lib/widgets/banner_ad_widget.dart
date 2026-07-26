@@ -38,6 +38,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           Timer(adFreeUntil.difference(DateTime.now()), _load);
       return;
     }
+    await AdService.ensureInitialized();
     if (!mounted) return;
     _ad = BannerAd(
       adUnitId: AdService.bannerAdUnitId,

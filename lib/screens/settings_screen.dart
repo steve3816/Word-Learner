@@ -63,7 +63,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _loadRewardedAd() {
+  Future<void> _loadRewardedAd() async {
+    await AdService.ensureInitialized();
     RewardedAd.load(
       adUnitId: AdService.rewardedAdUnitId,
       request: const AdRequest(),

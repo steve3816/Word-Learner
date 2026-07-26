@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app_config.dart';
 
@@ -27,6 +28,14 @@ class AdService {
 
   static const _quizStartCountKey = 'quiz_completion_count';
   static const _adFreeUntilKey = 'ad_free_until';
+
+  static Future<InitializationStatus>? _initialization;
+
+  /// 第一次呼叫時才真正觸發 SDK 初始化，之後重複呼叫都拿到同一個 Future。
+  /// 廣告元件載入前都要先 await 這個，避免在 SDK 準備好之前送出廣告請求而失敗。
+  static Future<InitializationStatus> ensureInitialized() {
+    return _initialization ??= MobileAds.instance.initialize();
+  }
 
   /// 每次 [grantAdFree] 生效時遞增，讓已經顯示中的廣告元件能立即反應、把自己收起來。
   static final ValueNotifier<int> adFreeChanged = ValueNotifier(0);
