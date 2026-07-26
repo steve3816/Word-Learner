@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'app_theme.dart';
 import 'screens/word_book_list_screen.dart';
+import 'services/settings_service.dart';
 import 'services/widget_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
   WidgetService.syncWords();
+  await SettingsService.loadShowProficiencyIcons();
   runApp(const MyApp());
 }
 

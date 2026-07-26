@@ -395,7 +395,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.vpn_key_outlined),
                       title: const Text(
-                        'API Keys',
+                        'API 金鑰',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -422,6 +422,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ),
+                        const Text(
+                          '*金鑰僅儲存於本機裝置，只在呼叫 API 時使用',
+                          style: TextStyle(fontSize: 11, color: Colors.red),
+                        ),
                       ],
                     ),
                   ),
@@ -431,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       collapsedShape: const Border(),
                       leading: const Icon(Icons.edit_note),
                       title: const Text(
-                        'AI 提示詞設定',
+                        'AI 提示詞',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -566,6 +570,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 value: ProficiencyLevel.unfamiliar.score,
                               ),
                             ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _settingsCard(
+                    ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      leading: const Icon(Icons.tune),
+                      title: const Text(
+                        '顯示設定',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        ValueListenableBuilder<bool>(
+                          valueListenable: SettingsService.showProficiencyIcons,
+                          builder: (context, show, child) => SwitchListTile(
+                            title: const Text('列表熟練度'),
+                            value: show,
+                            onChanged: (v) => _settings.setShowProficiencyIcons(v),
                           ),
                         ),
                       ],

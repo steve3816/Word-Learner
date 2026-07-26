@@ -5,9 +5,9 @@ import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
-import '../utils/proficiency_util.dart';
 import '../services/widget_service.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../widgets/list_proficiency_icon.dart';
 import 'add_word_screen.dart';
 import 'quiz_screen.dart';
 import 'settings_screen.dart';
@@ -304,7 +304,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
               ),
             ),
             const SizedBox(width: 8),
-            proficiencyIcon(word.proficiency, size: 22),
+            ListProficiencyIcon(word.proficiency, size: 22),
           ],
         ),
         onTap: () async {
@@ -513,7 +513,8 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                                     trailing: _isSelecting
                                         ? null
                                         : (count > 0
-                                            ? proficiencyIcon(avgProficiency,
+                                            ? ListProficiencyIcon(
+                                                avgProficiency,
                                                 size: 24)
                                             : null),
                                     onLongPress: _isSelecting
@@ -596,7 +597,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                                   final (word, bookName) =
                                       _searchResults[index];
                                   return ListTile(
-                                    leading: proficiencyIcon(
+                                    leading: ListProficiencyIcon(
                                         word.proficiency,
                                         size: 28),
                                     title: Text(word.english),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ai_service.dart';
@@ -12,6 +13,24 @@ class SettingsService {
   static const _keyPrefix = 'api_key_';
   static const _promptPrefix = 'prompt_';
   static const _quizMaxProficiencyKey = 'quiz_max_proficiency';
+  static const _showProficiencyIconsKey = 'show_proficiency_icons';
+
+  /// 列表類畫面是否顯示熟練度表情圖示。app 啟動時由 [loadShowProficiencyIcons] 從
+  /// SharedPreferences 讀入初始值，之後透過 [setShowProficiencyIcons] 同步更新，
+  /// 讓已經顯示中的畫面能立即反應，不用重新進入。
+  static final ValueNotifier<bool> showProficiencyIcons = ValueNotifier(true);
+
+  static Future<void> loadShowProficiencyIcons() async {
+    final prefs = await SharedPreferences.getInstance();
+    showProficiencyIcons.value =
+        prefs.getBool(_showProficiencyIconsKey) ?? true;
+  }
+
+  Future<void> setShowProficiencyIcons(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showProficiencyIconsKey, value);
+    showProficiencyIcons.value = value;
+  }
 
   static const promptFields = ['english', 'chinese', 'explanation', 'example'];
   static const wordPlaceholder = '{word}';
