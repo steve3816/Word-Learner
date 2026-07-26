@@ -25,7 +25,7 @@ class AdService {
   static const _iosRewardedProdId     = '';
   static const _androidRewardedProdId = '';
 
-  static const _quizCompletionCountKey = 'quiz_completion_count';
+  static const _quizStartCountKey = 'quiz_completion_count';
   static const _adFreeUntilKey = 'ad_free_until';
 
   /// 每次 [grantAdFree] 生效時遞增，讓已經顯示中的廣告元件能立即反應、把自己收起來。
@@ -56,15 +56,15 @@ class AdService {
     return Platform.isIOS ? _iosRewardedProdId : _androidRewardedProdId;
   }
 
-  /// 累計一次複習完成。回傳這次是否已達到顯示全螢幕廣告的頻率（並在達標時歸零計數）。
-  static Future<bool> recordQuizCompletion() async {
+  /// 累計一次複習開始。回傳這次是否已達到顯示全螢幕廣告的頻率（並在達標時歸零計數）。
+  static Future<bool> recordQuizStart() async {
     final prefs = await SharedPreferences.getInstance();
-    final count = (prefs.getInt(_quizCompletionCountKey) ?? 0) + 1;
+    final count = (prefs.getInt(_quizStartCountKey) ?? 0) + 1;
     if (count >= AppConfig.quizInterstitialInterval) {
-      await prefs.setInt(_quizCompletionCountKey, 0);
+      await prefs.setInt(_quizStartCountKey, 0);
       return true;
     }
-    await prefs.setInt(_quizCompletionCountKey, count);
+    await prefs.setInt(_quizStartCountKey, count);
     return false;
   }
 

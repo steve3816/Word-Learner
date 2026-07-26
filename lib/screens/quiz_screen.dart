@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -72,66 +73,73 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _answered = false;
   bool _isCorrect = false;
   bool _loading = true;
-
-  InterstitialAd? _interstitialAd;
-  bool _showInterstitialOnExit = false;
+  bool _awaitingAd = false;
 
   @override
   void initState() {
     super.initState();
-    _loadQuestions();
-    _loadInterstitialAd();
+    _init();
   }
 
   @override
   void dispose() {
     _answerCtrl.dispose();
     _answerFocus.dispose();
-    _interstitialAd?.dispose();
     super.dispose();
   }
 
-  Future<void> _loadInterstitialAd() async {
-    if (await AdService.isAdFree()) return;
+  /// 廣告顯示在複習「開始」的那一刻（而不是結束離開時）：進入這個畫面只有一個入口，
+  /// 不像離開有返回鍵、手勢等多種路徑都要攔截，天然不會有廣告被繞過的問題。
+  ///
+  /// 只有輪到該播的那一次才即時去載入廣告並等待——不常駐預載，因為這件事本來就
+  /// 只偶爾發生一次，使用者等一下廣告載入是可以接受的；載入失敗（含沒網路）就
+  /// 直接放棄，不擋使用者進複習。
+  Future<void> _maybeShowInterstitialOnStart() async {
+    final due = await AdService.recordQuizStart();
+    if (!due || await AdService.isAdFree()) return;
+    if (mounted) setState(() => _awaitingAd = true);
+
+    final completer = Completer<void>();
     InterstitialAd.load(
       adUnitId: AdService.interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) => _interstitialAd = ad,
-        onAdFailedToLoad: (_) => _interstitialAd = null,
+        onAdLoaded: (ad) {
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              if (!completer.isCompleted) completer.complete();
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              if (!completer.isCompleted) completer.complete();
+            },
+          );
+          ad.show();
+        },
+        onAdFailedToLoad: (_) {
+          if (!completer.isCompleted) completer.complete();
+        },
       ),
     );
+    await completer.future;
   }
 
-  void _leaveResultScreen() {
-    final ad = _interstitialAd;
-    if (!_showInterstitialOnExit || ad == null) {
-      Navigator.pop(context);
-      return;
-    }
-    _interstitialAd = null;
-    ad.fullScreenContentCallback = FullScreenContentCallback(
-      onAdDismissedFullScreenContent: (ad) {
-        ad.dispose();
-        if (mounted) Navigator.pop(context);
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        ad.dispose();
-        if (mounted) Navigator.pop(context);
-      },
-    );
-    ad.show();
-  }
-
-  Future<void> _loadQuestions() async {
+  Future<void> _init() async {
     final all = widget.wordBookId != null
         ? await _db.getWordsByWordBook(widget.wordBookId!)
         : await _db.getAllWords();
     final maxProficiency = await SettingsService().getQuizMaxProficiency();
     final words = all.where((w) => w.proficiency <= maxProficiency).toList();
+    final questions = _generateQuestions(words);
+
+    await _maybeShowInterstitialOnStart();
+
+    if (!mounted) return;
     setState(() {
-      _questions = _generateQuestions(words);
+      _questions = questions;
       _loading = false;
+      _awaitingAd = false;
     });
   }
 
@@ -211,19 +219,13 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
-  void _next() async {
+  void _next() {
     _answerFocus.unfocus();
     if (_current + 1 >= _questions.length) {
       for (final r in _results) {
         _db.updateWord(r.question.word.copyWith(proficiency: r.newProficiency));
       }
-      final shouldShowAd = await AdService.recordQuizCompletion();
-      final adFree = await AdService.isAdFree();
-      if (!mounted) return;
-      setState(() {
-        _current = _questions.length;
-        _showInterstitialOnExit = shouldShowAd && !adFree;
-      });
+      setState(() => _current = _questions.length);
     } else {
       setState(() {
         _current++;
@@ -250,7 +252,10 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      if (_awaitingAd) {
+        return const Scaffold(backgroundColor: Colors.black, body: SizedBox.shrink());
+      }
+      return const Scaffold(body: SizedBox.shrink());
     }
     if (_questions.isEmpty) {
       return Scaffold(
@@ -458,7 +463,7 @@ class _QuizScreenState extends State<QuizScreen> {
             for (final result in _results) _buildResultRow(result),
             const SizedBox(height: 16),
             GradientButton(
-              onPressed: _leaveResultScreen,
+              onPressed: () => Navigator.pop(context),
               child: const Text('回到單字本'),
             ),
             const SizedBox(height: 16),
