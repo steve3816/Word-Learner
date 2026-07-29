@@ -236,6 +236,16 @@ class _WordListScreenState extends State<WordListScreen> {
               minLines: 2,
               maxLines: 6,
             ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '建立於 ${_wordBook.createdAt.year}/'
+                '${_wordBook.createdAt.month.toString().padLeft(2, '0')}/'
+                '${_wordBook.createdAt.day.toString().padLeft(2, '0')}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
           ],
         ),
         actions: [
