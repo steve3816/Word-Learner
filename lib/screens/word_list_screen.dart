@@ -5,6 +5,7 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
 import '../services/export_service.dart';
+import '../services/settings_service.dart';
 import '../services/tts_service.dart';
 import '../services/widget_service.dart';
 import '../widgets/list_proficiency_icon.dart';
@@ -53,7 +54,9 @@ class _WordListScreenState extends State<WordListScreen> {
       case _WordSort.oldestFirst:
         list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       case _WordSort.alpha:
-        list.sort((a, b) => a.english.toLowerCase().compareTo(b.english.toLowerCase()));
+        list.sort(
+          (a, b) => a.english.toLowerCase().compareTo(b.english.toLowerCase()),
+        );
     }
     return list;
   }
@@ -146,14 +149,16 @@ class _WordListScreenState extends State<WordListScreen> {
         children: others.isEmpty
             ? [const SimpleDialogOption(child: Text('沒有其他單字書'))]
             : others
-                .map((b) => SimpleDialogOption(
+                  .map(
+                    (b) => SimpleDialogOption(
                       onPressed: () => Navigator.pop(ctx, b.$1),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text(b.$1.name),
                       ),
-                    ))
-                .toList(),
+                    ),
+                  )
+                  .toList(),
       ),
     );
 
@@ -163,7 +168,8 @@ class _WordListScreenState extends State<WordListScreen> {
     WidgetService.syncWords();
     _exitSelectMode();
     await _loadWords();
-    if (mounted) showSuccessSnackBar(context, '已移動 $count 個單字到「${target.name}」');
+    if (mounted)
+      showSuccessSnackBar(context, '已移動 $count 個單字到「${target.name}」');
   }
 
   String _formatCreatedAt(DateTime createdAt) {
@@ -359,8 +365,10 @@ class _WordListScreenState extends State<WordListScreen> {
         child: _words.isEmpty
             ? const Center(child: Text('還沒有單字，點 + 新增吧！'))
             : ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 itemCount: _words.length,
                 itemBuilder: (context, index) {
                   final word = _words[index];
@@ -380,8 +388,9 @@ class _WordListScreenState extends State<WordListScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2A2530)
-                                .withValues(alpha: 0.06),
+                            color: const Color(
+                              0xFF2A2530,
+                            ).withValues(alpha: 0.06),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -391,8 +400,7 @@ class _WordListScreenState extends State<WordListScreen> {
                         borderRadius: BorderRadius.circular(14),
                         child: Row(
                           children: [
-                            Container(
-                                width: 3, color: AppColors.primary),
+                            Container(width: 3, color: AppColors.primary),
                             Expanded(
                               child: Slidable(
                                 key: Key('word_${word.id}'),
@@ -420,37 +428,64 @@ class _WordListScreenState extends State<WordListScreen> {
                                           activeColor: AppColors.primary,
                                         )
                                       : null,
-                                  title: Text(word.english,
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  title: Text(
+                                    word.english,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   subtitle: Text(word.chinese),
                                   trailing: _isSelecting
                                       ? null
                                       : Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Text(
-                                              _formatCreatedAt(word.createdAt),
-                                              style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey),
+                                            ValueListenableBuilder<bool>(
+                                              valueListenable:
+                                                  SettingsService.showCreatedAt,
+                                              builder: (context, show, child) =>
+                                                  show
+                                                  ? Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          _formatCreatedAt(
+                                                            word.createdAt,
+                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 12,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 4,
+                                                        ),
+                                                      ],
+                                                    )
+                                                  : const SizedBox.shrink(),
                                             ),
-                                            const SizedBox(width: 4),
                                             IconButton(
                                               icon: const Icon(
-                                                  Icons.volume_up_rounded,
-                                                  size: 18),
+                                                Icons.volume_up_rounded,
+                                                size: 18,
+                                              ),
                                               padding: EdgeInsets.zero,
                                               constraints:
                                                   const BoxConstraints(),
                                               tooltip: '發音',
-                                              onPressed: () =>
-                                                  TtsService.instance
-                                                      .speak(word.english),
+                                              onPressed: () => TtsService
+                                                  .instance
+                                                  .speak(word.english),
                                             ),
                                             const SizedBox(width: 4),
                                             ListProficiencyIcon(
-                                                word.proficiency,
-                                                size: 22),
+                                              word.proficiency,
+                                              size: 22,
+                                            ),
                                           ],
                                         ),
                                   onLongPress: _isSelecting
@@ -485,10 +520,8 @@ class _WordListScreenState extends State<WordListScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: FilledButton.icon(
                   icon: const Icon(Icons.drive_file_move_outline),
-                  label: Text(
-                      '移動到其他單字書（${_selectedIds.length}）'),
-                  onPressed:
-                      _selectedIds.isEmpty ? null : _moveSelected,
+                  label: Text('移動到其他單字書（${_selectedIds.length}）'),
+                  onPressed: _selectedIds.isEmpty ? null : _moveSelected,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     minimumSize: const Size.fromHeight(48),

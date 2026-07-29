@@ -14,11 +14,15 @@ class SettingsService {
   static const _promptPrefix = 'prompt_';
   static const _quizMaxProficiencyKey = 'quiz_max_proficiency';
   static const _showProficiencyIconsKey = 'show_proficiency_icons';
+  static const _showCreatedAtKey = 'show_created_at';
 
   /// 列表類畫面是否顯示熟練度表情圖示。app 啟動時由 [loadShowProficiencyIcons] 從
   /// SharedPreferences 讀入初始值，之後透過 [setShowProficiencyIcons] 同步更新，
   /// 讓已經顯示中的畫面能立即反應，不用重新進入。
   static final ValueNotifier<bool> showProficiencyIcons = ValueNotifier(true);
+
+  /// 單字列表是否顯示單字的創建時間，運作方式跟 [showProficiencyIcons] 一樣。
+  static final ValueNotifier<bool> showCreatedAt = ValueNotifier(true);
 
   static Future<void> loadShowProficiencyIcons() async {
     final prefs = await SharedPreferences.getInstance();
@@ -30,6 +34,17 @@ class SettingsService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showProficiencyIconsKey, value);
     showProficiencyIcons.value = value;
+  }
+
+  static Future<void> loadShowCreatedAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    showCreatedAt.value = prefs.getBool(_showCreatedAtKey) ?? true;
+  }
+
+  Future<void> setShowCreatedAt(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showCreatedAtKey, value);
+    showCreatedAt.value = value;
   }
 
   static const promptFields = ['english', 'chinese', 'explanation', 'example'];
@@ -150,7 +165,8 @@ class SettingsService {
 
   Future<int> getQuizMaxProficiency() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_quizMaxProficiencyKey) ?? ProficiencyLevel.proficient.score;
+    return prefs.getInt(_quizMaxProficiencyKey) ??
+        ProficiencyLevel.proficient.score;
   }
 
   Future<void> setQuizMaxProficiency(int value) async {
