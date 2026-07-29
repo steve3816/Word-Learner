@@ -12,26 +12,29 @@ class GeminiService implements AiService {
 
   @override
   Future<String> complete(String prompt) async {
-    final response = await http.post(
-      Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {'text': prompt}
-            ]
-          }
-        ],
-      }),
-    ).timeout(const Duration(seconds: 10));
+    final response = await http
+        .post(
+          Uri.parse(
+            'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: jsonEncode({
+            'contents': [
+              {
+                'parts': [
+                  {'text': prompt},
+                ],
+              },
+            ],
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
     debugPrint('[AI] $_model ${response.statusCode}: ${response.body}');
     if (response.statusCode != 200) {
-      final message = _extractErrorMessage(response.body);
+      final message = _extractErrorMessage(response.body, response.statusCode);
       throw Exception(message);
     }
     final data = jsonDecode(response.body);
@@ -39,12 +42,12 @@ class GeminiService implements AiService {
         .trim();
   }
 
-  String _extractErrorMessage(String body) {
+  String _extractErrorMessage(String body, int statusCode) {
     try {
       final err = jsonDecode(body);
       final message = err['error']?['message'] as String?;
       if (message != null && message.isNotEmpty) return message;
     } catch (_) {}
-    return body;
+    return 'AI 服務回應異常（狀態碼 $statusCode）';
   }
 }

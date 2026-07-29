@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/example_sentence.dart';
@@ -243,9 +246,13 @@ class _AddWordScreenState extends State<AddWordScreen> {
   }
 
   void _showAiError(Object e) {
-    final message = e is Exception
-        ? e.toString().replaceFirst('Exception: ', '')
-        : e.toString();
+    final message = switch (e) {
+      SocketException() ||
+      TimeoutException() ||
+      http.ClientException() => '網路連線失敗，請檢查網路狀態後再試一次',
+      Exception() => e.toString().replaceFirst('Exception: ', ''),
+      _ => e.toString(),
+    };
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
