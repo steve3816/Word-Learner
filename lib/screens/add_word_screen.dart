@@ -192,7 +192,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
     } else {
       // 新增單字尚未存檔、沒有 id，先記在本機，存檔時才一併寫入關聯。
       final picked = await Future.wait(selected.map(_db.getWordById));
-      setState(() => _relatedWords = [..._relatedWords, ...picked.whereType<Word>()]);
+      setState(
+        () => _relatedWords = [..._relatedWords, ...picked.whereType<Word>()],
+      );
     }
   }
 
@@ -202,8 +204,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
       await _db.removeWordRelation(id, relatedWord.id!);
       await _loadRelatedWords();
     } else {
-      setState(() => _relatedWords =
-          _relatedWords.where((w) => w.id != relatedWord.id).toList());
+      setState(
+        () => _relatedWords = _relatedWords
+            .where((w) => w.id != relatedWord.id)
+            .toList(),
+      );
     }
   }
 
@@ -449,7 +454,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
         final newId = await _db.insertWord(word);
         if (_relatedWords.isNotEmpty) {
           await _db.addWordRelations(
-              newId, _relatedWords.map((w) => w.id!).toList());
+            newId,
+            _relatedWords.map((w) => w.id!).toList(),
+          );
         }
         WidgetService.syncWords();
         if (mounted) Navigator.pop(context);
@@ -612,226 +619,239 @@ class _AddWordScreenState extends State<AddWordScreen> {
     final word = _currentWord!;
     final currentLevel = ProficiencyLevel.fromScore(_proficiency);
 
-    return NotificationListener<ScrollMetricsNotification>(
-      onNotification: (notification) {
-        _onViewScroll();
-        return false;
-      },
-      child: ListView(
-        controller: _viewScrollController,
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-        children: [
-          // ── Header ───────────────────────────────────────────────
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      word.english,
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        height: 1.0,
+    return SelectionArea(
+      child: NotificationListener<ScrollMetricsNotification>(
+        onNotification: (notification) {
+          _onViewScroll();
+          return false;
+        },
+        child: ListView(
+          controller: _viewScrollController,
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          children: [
+            // ── Header ───────────────────────────────────────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        word.english,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          height: 1.0,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    _speakerBtn(word.english, size: 32, iconSize: 18),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  word.chinese,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 8),
-                  _speakerBtn(word.english, size: 32, iconSize: 18),
-                ],
-              ),
+                ),
+              ],
+            ),
+            if (word.englishExplanation?.isNotEmpty == true) ...[
               const SizedBox(height: 20),
-              Text(
-                word.chinese,
-                style: const TextStyle(
-                  fontSize: 18,
-                  color: AppColors.textSecondary,
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: '英文解釋',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        word.englishExplanation!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _speakerBtn(word.englishExplanation!),
+                  ],
                 ),
               ),
             ],
-          ),
-          if (word.englishExplanation?.isNotEmpty == true) ...[
-            const SizedBox(height: 20),
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: '英文解釋',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+            if (word.notes?.isNotEmpty == true) ...[
+              const SizedBox(height: 10),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: '備注',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
+                ),
+                child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      word.englishExplanation!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textMuted,
-                        fontStyle: FontStyle.italic,
+            ],
+            if (_relatedWords.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: _sectionCard(
+                  child: Theme(
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 2,
                       ),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      title: Text(
+                        '關聯字（${_relatedWords.length}）',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      initiallyExpanded: false,
+                      children: [
+                        for (int i = 0; i < _relatedWords.length; i++) ...[
+                          if (i > 0)
+                            const Divider(
+                              height: 1,
+                              color: AppColors.borderSubtle,
+                            ),
+                          InkWell(
+                            onTap: () => _openRelatedWord(_relatedWords[i]),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _relatedWords[i].english,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    _relatedWords[i].chinese,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  _speakerBtn(word.englishExplanation!),
-                ],
+                ),
               ),
-            ),
-          ],
-          if (word.notes?.isNotEmpty == true) ...[
-            const SizedBox(height: 10),
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: '備注',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.fromLTRB(12, 8, 12, 12),
-              ),
-              child: Text(word.notes!, style: const TextStyle(fontSize: 14)),
-            ),
-          ],
-          if (_relatedWords.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: _sectionCard(
-                child: Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    title: Text(
-                      '關聯字（${_relatedWords.length}）',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
-                    initiallyExpanded: false,
-                    children: [
-                      for (int i = 0; i < _relatedWords.length; i++) ...[
-                        if (i > 0)
-                          const Divider(height: 1, color: AppColors.borderSubtle),
-                        InkWell(
-                          onTap: () => _openRelatedWord(_relatedWords[i]),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Row(
-                              children: [
-                                Text(
-                                  _relatedWords[i].english,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  _relatedWords[i].chinese,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
+            ],
+            const SizedBox(height: 20),
+
+            // ── Proficiency ───────────────────────────────────────────
+            _sectionCard(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '熟練度',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(currentLevel.icon, size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          currentLevel.label,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '($_proficiency%)',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
                           ),
                         ),
                       ],
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: _proficiency / 100,
+                      backgroundColor: AppColors.borderSubtle,
+                      valueColor: AlwaysStoppedAnimation(
+                        _proficiencyBarColor(_proficiency),
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                      minHeight: 4,
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-          const SizedBox(height: 20),
 
-          // ── Proficiency ───────────────────────────────────────────
-          _sectionCard(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        '熟練度',
-                        style: TextStyle(
+            // ── Examples ─────────────────────────────────────────────
+            if (word.examples.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: _sectionCard(
+                  child: Theme(
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 2,
+                      ),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      title: Text(
+                        '例句（${word.examples.length}）',
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: AppColors.textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const Spacer(),
-                      Icon(currentLevel.icon, size: 22),
-                      const SizedBox(width: 8),
-                      Text(
-                        currentLevel.label,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '($_proficiency%)',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: _proficiency / 100,
-                    backgroundColor: AppColors.borderSubtle,
-                    valueColor: AlwaysStoppedAnimation(
-                      _proficiencyBarColor(_proficiency),
-                    ),
-                    borderRadius: BorderRadius.circular(4),
-                    minHeight: 4,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Examples ─────────────────────────────────────────────
-          if (word.examples.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: _sectionCard(
-                child: Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 2,
-                    ),
-                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    title: Text(
-                      '例句（${word.examples.length}）',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    initiallyExpanded: true,
-                    children: [
-                      for (int i = 0; i < word.examples.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 10),
-                        _buildExampleView(word.examples[i]),
+                      initiallyExpanded: true,
+                      children: [
+                        for (int i = 0; i < word.examples.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 10),
+                          _buildExampleView(word.examples[i]),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1044,7 +1064,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             children: [
                               const Text(
                                 '關聯字',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const Spacer(),
                               _circleAddBtn(_openRelationPicker),
@@ -1055,15 +1078,23 @@ class _AddWordScreenState extends State<AddWordScreen> {
                               padding: EdgeInsets.only(top: 4),
                               child: Text(
                                 '尚無關聯字',
-                                style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
                             )
                           else
                             for (int i = 0; i < _relatedWords.length; i++) ...[
                               if (i > 0)
-                                const Divider(height: 1, color: AppColors.borderSubtle),
+                                const Divider(
+                                  height: 1,
+                                  color: AppColors.borderSubtle,
+                                ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 child: Row(
                                   children: [
                                     Text(
@@ -1087,7 +1118,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
                                       color: AppColors.textMuted,
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
-                                      onPressed: () => _removeRelation(_relatedWords[i]),
+                                      onPressed: () =>
+                                          _removeRelation(_relatedWords[i]),
                                     ),
                                   ],
                                 ),
