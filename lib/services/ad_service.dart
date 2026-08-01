@@ -5,27 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../app_config.dart';
 
 class AdService {
-  static const _iosTestId     = 'ca-app-pub-3940256099942544/2934735716';
-  static const _androidTestId = 'ca-app-pub-3940256099942544/6300978111';
-
-  // 上架前填入 AdMob 後台的真實 Ad Unit ID
-  static const _iosProdId     = '';
-  static const _androidProdId = 'ca-app-pub-3197847556942098/3357169921';
-
-  static const _iosInterstitialTestId     = 'ca-app-pub-3940256099942544/4411468910';
-  static const _androidInterstitialTestId = 'ca-app-pub-3940256099942544/1033173712';
-
-  // 上架前填入 AdMob 後台的真實 Ad Unit ID
-  static const _iosInterstitialProdId     = '';
-  static const _androidInterstitialProdId = '';
-
-  static const _iosRewardedTestId     = 'ca-app-pub-3940256099942544/1712485313';
-  static const _androidRewardedTestId = 'ca-app-pub-3940256099942544/5224354917';
-
-  // 上架前填入 AdMob 後台的真實 Ad Unit ID
-  static const _iosRewardedProdId     = '';
-  static const _androidRewardedProdId = '';
-
   static const _quizStartCountKey = 'quiz_completion_count';
   static const _adFreeUntilKey = 'ad_free_until';
 
@@ -42,27 +21,35 @@ class AdService {
 
   static String get bannerAdUnitId {
     if (kDebugMode) {
-      return Platform.isIOS ? _iosTestId : _androidTestId;
+      return Platform.isIOS
+          ? AppConfig.iosTestBannerId
+          : AppConfig.androidTestBannerId;
     }
-    return Platform.isIOS ? _iosProdId : _androidProdId;
+    return Platform.isIOS
+        ? AppConfig.iosProdBannerId
+        : AppConfig.androidProdBannerId;
   }
 
   static String get interstitialAdUnitId {
     if (kDebugMode) {
       return Platform.isIOS
-          ? _iosInterstitialTestId
-          : _androidInterstitialTestId;
+          ? AppConfig.iosTestInterstitialId
+          : AppConfig.androidTestInterstitialId;
     }
     return Platform.isIOS
-        ? _iosInterstitialProdId
-        : _androidInterstitialProdId;
+        ? AppConfig.iosProdInterstitialId
+        : AppConfig.androidProdInterstitialId;
   }
 
   static String get rewardedAdUnitId {
     if (kDebugMode) {
-      return Platform.isIOS ? _iosRewardedTestId : _androidRewardedTestId;
+      return Platform.isIOS
+          ? AppConfig.iosTestRewardedId
+          : AppConfig.androidTestRewardedId;
     }
-    return Platform.isIOS ? _iosRewardedProdId : _androidRewardedProdId;
+    return Platform.isIOS
+        ? AppConfig.iosProdRewardedId
+        : AppConfig.androidProdRewardedId;
   }
 
   /// 累計一次複習開始。回傳這次是否已達到顯示全螢幕廣告的頻率（並在達標時歸零計數）。
