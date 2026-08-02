@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
@@ -224,46 +226,86 @@ class _WordListScreenState extends State<WordListScreen> {
   Future<void> _editWordBook() async {
     final nameCtrl = TextEditingController(text: _wordBook.name);
     final descCtrl = TextEditingController(text: _wordBook.description ?? '');
+    var isEditing = false;
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('單字書設定'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: '名稱'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              decoration: const InputDecoration(labelText: '描述'),
-              minLines: 2,
-              maxLines: 6,
-            ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '建立於 ${_wordBook.createdAt.year}/'
-                '${_wordBook.createdAt.month.toString().padLeft(2, '0')}/'
-                '${_wordBook.createdAt.day.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ),
-          ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('單字書設定'),
+          content: isEditing
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: '名稱'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descCtrl,
+                      decoration: const InputDecoration(labelText: '描述'),
+                      minLines: 2,
+                      maxLines: 6,
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _wordBook.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (_wordBook.description?.isNotEmpty == true) ...[
+                      const SizedBox(height: 8),
+                      Linkify(
+                        text: _wordBook.description!,
+                        style: const TextStyle(fontSize: 14),
+                        linkStyle: const TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                        onOpen: (link) => launchUrl(
+                          Uri.parse(link.url),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Text(
+                      '建立於 ${_wordBook.createdAt.year}/'
+                      '${_wordBook.createdAt.month.toString().padLeft(2, '0')}/'
+                      '${_wordBook.createdAt.day.toString().padLeft(2, '0')}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+          actions: isEditing
+              ? [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('取消'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('儲存'),
+                  ),
+                ]
+              : [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('關閉'),
+                  ),
+                  TextButton(
+                    onPressed: () => setDialogState(() => isEditing = true),
+                    child: const Text('編輯'),
+                  ),
+                ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('儲存'),
-          ),
-        ],
       ),
     );
     if (result != true || nameCtrl.text.trim().isEmpty) return;
