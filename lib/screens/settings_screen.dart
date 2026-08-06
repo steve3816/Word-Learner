@@ -639,7 +639,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.favorite_border),
                     const SizedBox(width: 12),
