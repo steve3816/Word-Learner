@@ -13,11 +13,15 @@ import '../services/widget_service.dart';
 import '../utils/proficiency_util.dart';
 import 'word_relation_picker_screen.dart';
 
+// 這些是程式解析回應用的格式指示，不是使用者可調整的內容，所以不會顯示在
+// 長按提示詞彈窗裡，而是使用者編輯完內容後，送出前才附加回去。
 const _exampleFormatSuffix =
     ' Also provide its Traditional Chinese translation. '
     'Return a JSON object with exactly two fields: "sentence" (the English example) '
     'and "chineseTranslation" (the Traditional Chinese translation). '
     'Return only the JSON object, no markdown, no extra text.';
+const _sentenceOnlyFormatSuffix = '只回傳英文例句本身，不要任何解釋或翻譯。';
+const _translationOnlyFormatSuffix = '只回傳中文翻譯，不要任何解釋。';
 
 class _ExampleEntry {
   final TextEditingController sentenceCtrl;
@@ -238,11 +242,67 @@ class _AddWordScreenState extends State<AddWordScreen> {
   }
 
   String _buildPrompt(String field) {
-    final base = (_prompts[field] ?? '').replaceAll(
+    return (_prompts[field] ?? '').replaceAll(
       SettingsService.wordPlaceholder,
       _englishCtrl.text.trim(),
     );
-    return field == 'example' ? '$base$_exampleFormatSuffix' : base;
+  }
+
+  String _defaultEnglishPrompt() => (_prompts['english'] ?? '').replaceAll(
+    SettingsService.wordPlaceholder,
+    _chineseCtrl.text.trim(),
+  );
+
+  String _defaultExampleSentencePrompt(int index) =>
+      '為英文單字「${_englishCtrl.text.trim()}」，'
+      '根據中文意思「${_examples[index].translationCtrl.text.trim()}」，'
+      '造一個自然的英文例句。';
+
+  String _defaultExampleTranslationPrompt(int index) =>
+      '將以下英文例句翻譯成繁體中文：「${_examples[index].sentenceCtrl.text.trim()}」。';
+
+  /// 長按 AI 按鈕時彈出，讓使用者針對這一次呼叫臨時修改提示詞（不會存回設定）。
+  /// 取消或沒有修改則回傳 null，維持原本的預設提示詞。
+  Future<String?> _promptOverrideDialog(
+    String defaultPrompt,
+    String fieldLabel,
+  ) async {
+    final ctrl = TextEditingController(text: defaultPrompt);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('自訂本次提示詞'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '欄位：$fieldLabel',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              minLines: 4,
+              maxLines: 10,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('送出'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true ? ctrl.text.trim() : null;
   }
 
   void _showAiError(Object e) {
@@ -268,14 +328,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
     );
   }
 
-  Future<void> _generateEnglish() async {
+  Future<void> _generateEnglish({String? overridePrompt}) async {
     if (_chineseCtrl.text.trim().isEmpty || _aiService == null) return;
     setState(() => _loadingEnglish = true);
     try {
-      final prompt = (_prompts['english'] ?? '').replaceAll(
-        SettingsService.wordPlaceholder,
-        _chineseCtrl.text.trim(),
-      );
+      final prompt = overridePrompt ?? _defaultEnglishPrompt();
       final result = await _aiService!.complete(prompt);
       _englishCtrl.text = result.trim();
     } catch (e) {
@@ -285,11 +342,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
-  Future<void> _generateChinese() async {
+  Future<void> _generateChinese({String? overridePrompt}) async {
     if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
     setState(() => _loadingChinese = true);
     try {
-      final result = await _aiService!.complete(_buildPrompt('chinese'));
+      final prompt = overridePrompt ?? _buildPrompt('chinese');
+      final result = await _aiService!.complete(prompt);
       _chineseCtrl.text = result;
     } catch (e) {
       if (mounted) _showAiError(e);
@@ -298,11 +356,12 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
-  Future<void> _generateExplanation() async {
+  Future<void> _generateExplanation({String? overridePrompt}) async {
     if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
     setState(() => _loadingExplanation = true);
     try {
-      final result = await _aiService!.complete(_buildPrompt('explanation'));
+      final prompt = overridePrompt ?? _buildPrompt('explanation');
+      final result = await _aiService!.complete(prompt);
       _explanationCtrl.text = result;
     } catch (e) {
       if (mounted) _showAiError(e);
@@ -311,16 +370,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
-  Future<void> _generateExampleSentence(int index) async {
+  Future<void> _generateExampleSentence(
+    int index, {
+    String? overridePrompt,
+  }) async {
     if (_aiService == null) return;
     final entry = _examples[index];
     if (entry.translationCtrl.text.trim().isEmpty) return;
     setState(() => entry.loadingSentence = true);
     try {
-      final word = _englishCtrl.text.trim();
-      final chinese = entry.translationCtrl.text.trim();
-      final prompt =
-          '為英文單字「$word」，根據中文意思「$chinese」，造一個自然的英文例句。只回傳英文例句本身，不要任何解釋或翻譯。';
+      final content = overridePrompt ?? _defaultExampleSentencePrompt(index);
+      final prompt = '$content$_sentenceOnlyFormatSuffix';
       final result = await _aiService!.complete(prompt);
       entry.sentenceCtrl.text = result.trim();
     } catch (e) {
@@ -330,14 +390,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
-  Future<void> _generateExampleTranslation(int index) async {
+  Future<void> _generateExampleTranslation(
+    int index, {
+    String? overridePrompt,
+  }) async {
     if (_aiService == null) return;
     final entry = _examples[index];
     if (entry.sentenceCtrl.text.trim().isEmpty) return;
     setState(() => entry.loadingTranslation = true);
     try {
-      final sentence = entry.sentenceCtrl.text.trim();
-      final prompt = '將以下英文例句翻譯成繁體中文：「$sentence」。只回傳中文翻譯，不要任何解釋。';
+      final content = overridePrompt ?? _defaultExampleTranslationPrompt(index);
+      final prompt = '$content$_translationOnlyFormatSuffix';
       final result = await _aiService!.complete(prompt);
       entry.translationCtrl.text = result.trim();
     } catch (e) {
@@ -347,11 +410,13 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
   }
 
-  Future<void> _generateExample(int index) async {
+  Future<void> _generateExample(int index, {String? overridePrompt}) async {
     if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
     setState(() => _examples[index].loading = true);
     try {
-      final raw = await _aiService!.complete(_buildPrompt('example'));
+      final content = overridePrompt ?? _buildPrompt('example');
+      final prompt = '$content$_exampleFormatSuffix';
+      final raw = await _aiService!.complete(prompt);
       final result = ExampleSentence.parseJson(raw);
       _examples[index].sentenceCtrl.text = result.sentence;
       _examples[index].translationCtrl.text = result.chineseTranslation ?? '';
@@ -516,7 +581,11 @@ class _AddWordScreenState extends State<AddWordScreen> {
     constraints: const BoxConstraints(),
   );
 
-  Widget _aiIconBtn({required bool loading, required VoidCallback onPressed}) {
+  Widget _aiIconBtn({
+    required bool loading,
+    required VoidCallback onPressed,
+    VoidCallback? onLongPress,
+  }) {
     if (loading) {
       return const Padding(
         padding: EdgeInsets.all(6),
@@ -527,15 +596,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
         ),
       );
     }
-    return IconButton(
-      icon: const Icon(Icons.auto_fix_high, size: 18),
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkResponse(
+        onTap: onPressed,
+        onLongPress: onLongPress,
+        radius: 20,
+        child: const Padding(
+          padding: EdgeInsets.all(6),
+          child: Icon(Icons.auto_fix_high, size: 18, color: AppColors.primary),
+        ),
       ),
-      padding: const EdgeInsets.all(6),
-      constraints: const BoxConstraints(),
     );
   }
 
@@ -891,6 +963,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       return _aiIconBtn(
                         loading: entry.loading,
                         onPressed: () => _generateExample(index),
+                        onLongPress: () async {
+                          final edited = await _promptOverrideDialog(
+                            _buildPrompt('example'),
+                            SettingsService.promptLabel('example'),
+                          );
+                          if (edited != null) {
+                            await _generateExample(
+                              index,
+                              overridePrompt: edited,
+                            );
+                          }
+                        },
                       );
                     },
                   ),
@@ -925,6 +1009,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
                         : _aiIconBtn(
                             loading: entry.loadingSentence,
                             onPressed: () => _generateExampleSentence(index),
+                            onLongPress: () async {
+                              final edited = await _promptOverrideDialog(
+                                _defaultExampleSentencePrompt(index),
+                                '依中文造例句',
+                              );
+                              if (edited != null) {
+                                await _generateExampleSentence(
+                                  index,
+                                  overridePrompt: edited,
+                                );
+                              }
+                            },
                           ),
                   ),
                 ],
@@ -954,6 +1050,18 @@ class _AddWordScreenState extends State<AddWordScreen> {
                         : _aiIconBtn(
                             loading: entry.loadingTranslation,
                             onPressed: () => _generateExampleTranslation(index),
+                            onLongPress: () async {
+                              final edited = await _promptOverrideDialog(
+                                _defaultExampleTranslationPrompt(index),
+                                '例句中文翻譯',
+                              );
+                              if (edited != null) {
+                                await _generateExampleTranslation(
+                                  index,
+                                  overridePrompt: edited,
+                                );
+                              }
+                            },
                           ),
                   ),
                 ],
@@ -994,6 +1102,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             : _aiIconBtn(
                                 loading: _loadingEnglish,
                                 onPressed: _generateEnglish,
+                                onLongPress: () async {
+                                  final edited = await _promptOverrideDialog(
+                                    _defaultEnglishPrompt(),
+                                    SettingsService.promptLabel('english'),
+                                  );
+                                  if (edited != null) {
+                                    await _generateEnglish(
+                                      overridePrompt: edited,
+                                    );
+                                  }
+                                },
                               ),
                       ),
                     ],
@@ -1020,6 +1139,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             : _aiIconBtn(
                                 loading: _loadingChinese,
                                 onPressed: _generateChinese,
+                                onLongPress: () async {
+                                  final edited = await _promptOverrideDialog(
+                                    _buildPrompt('chinese'),
+                                    SettingsService.promptLabel('chinese'),
+                                  );
+                                  if (edited != null) {
+                                    await _generateChinese(
+                                      overridePrompt: edited,
+                                    );
+                                  }
+                                },
                               ),
                       ),
                     ],
@@ -1046,6 +1176,17 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             : _aiIconBtn(
                                 loading: _loadingExplanation,
                                 onPressed: _generateExplanation,
+                                onLongPress: () async {
+                                  final edited = await _promptOverrideDialog(
+                                    _buildPrompt('explanation'),
+                                    SettingsService.promptLabel('explanation'),
+                                  );
+                                  if (edited != null) {
+                                    await _generateExplanation(
+                                      overridePrompt: edited,
+                                    );
+                                  }
+                                },
                               ),
                       ),
                     ],
