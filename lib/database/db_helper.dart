@@ -21,7 +21,7 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE word_books(
@@ -29,7 +29,8 @@ class DbHelper {
             name TEXT NOT NULL,
             description TEXT,
             created_at INTEGER NOT NULL,
-            is_default INTEGER NOT NULL DEFAULT 0
+            is_default INTEGER NOT NULL DEFAULT 0,
+            sort_order INTEGER NOT NULL DEFAULT 0
           )
         ''');
         await db.insert('word_books', {
@@ -60,14 +61,19 @@ class DbHelper {
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
-          await db.execute('ALTER TABLE words ADD COLUMN english_explanation TEXT');
+          await db.execute(
+            'ALTER TABLE words ADD COLUMN english_explanation TEXT',
+          );
           await db.execute('ALTER TABLE words ADD COLUMN examples_json TEXT');
-          final rows = await db.query('words', columns: ['id', 'example_sentence']);
+          final rows = await db.query(
+            'words',
+            columns: ['id', 'example_sentence'],
+          );
           for (final row in rows) {
             final old = row['example_sentence'] as String?;
             if (old != null && old.isNotEmpty) {
               final json = jsonEncode([
-                {'sentence': old, 'chineseTranslation': null}
+                {'sentence': old, 'chineseTranslation': null},
               ]);
               await db.update(
                 'words',
@@ -125,7 +131,9 @@ class DbHelper {
           }
         }
         if (oldVersion < 6) {
-          await db.execute('ALTER TABLE word_books ADD COLUMN description TEXT');
+          await db.execute(
+            'ALTER TABLE word_books ADD COLUMN description TEXT',
+          );
         }
         if (oldVersion < 7) {
           await db.execute('ALTER TABLE words ADD COLUMN notes TEXT');
@@ -139,6 +147,27 @@ class DbHelper {
             )
           ''');
         }
+        if (oldVersion < 9) {
+          await db.execute(
+            'ALTER TABLE word_books ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
+          );
+          // 沿用目前「預設本優先、其餘新到舊」的順序初始化 sort_order，
+          // 避免升級當下既有單字書的排列突然跳動。
+          final rows = await db.query(
+            'word_books',
+            orderBy: 'is_default DESC, created_at DESC',
+          );
+          final batch = db.batch();
+          for (var i = 0; i < rows.length; i++) {
+            batch.update(
+              'word_books',
+              {'sort_order': i},
+              where: 'id = ?',
+              whereArgs: [rows[i]['id']],
+            );
+          }
+          await batch.commit(noResult: true);
+        }
       },
     );
   }
@@ -146,28 +175,62 @@ class DbHelper {
   // ── Word Book ────────────────────────────────────────────
   Future<int> insertWordBook(WordBook book) async {
     final db = await database;
-    return db.insert('word_books', book.toMap());
+    // 新單字書排在最前面（沿用原本「新到舊」的預設觀感），之後使用者仍可自由拖曳調整。
+    final minRow = await db.rawQuery(
+      'SELECT MIN(sort_order) as m FROM word_books',
+    );
+    final minSortOrder = (minRow.first['m'] as int?) ?? 0;
+    final map = book.toMap()..['sort_order'] = minSortOrder - 1;
+    return db.insert('word_books', map);
+  }
+
+  /// 依照 [orderedIds] 的順序（不含預設單字書）重新設定 sort_order。
+  Future<void> updateWordBookOrder(List<int> orderedIds) async {
+    final db = await database;
+    final batch = db.batch();
+    for (var i = 0; i < orderedIds.length; i++) {
+      batch.update(
+        'word_books',
+        {'sort_order': i},
+        where: 'id = ?',
+        whereArgs: [orderedIds[i]],
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   Future<void> updateWordBook(WordBook book) async {
     final db = await database;
-    await db.update('word_books', book.toMap(), where: 'id = ?', whereArgs: [book.id]);
+    await db.update(
+      'word_books',
+      book.toMap(),
+      where: 'id = ?',
+      whereArgs: [book.id],
+    );
   }
 
   Future<void> deleteWordBook(int id) async {
     final db = await database;
-    final rows = await db.query('word_books',
-        columns: ['is_default'], where: 'id = ?', whereArgs: [id]);
+    final rows = await db.query(
+      'word_books',
+      columns: ['is_default'],
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     if (rows.isNotEmpty && (rows.first['is_default'] as int) == 1) return;
-    final wordIds = (await db.query('words',
-            columns: ['id'], where: 'word_book_id = ?', whereArgs: [id]))
-        .map((r) => r['id'] as int)
-        .toList();
+    final wordIds = (await db.query(
+      'words',
+      columns: ['id'],
+      where: 'word_book_id = ?',
+      whereArgs: [id],
+    )).map((r) => r['id'] as int).toList();
     if (wordIds.isNotEmpty) {
       final placeholders = List.filled(wordIds.length, '?').join(',');
-      await db.delete('word_relations',
-          where: 'word_id_a IN ($placeholders) OR word_id_b IN ($placeholders)',
-          whereArgs: [...wordIds, ...wordIds]);
+      await db.delete(
+        'word_relations',
+        where: 'word_id_a IN ($placeholders) OR word_id_b IN ($placeholders)',
+        whereArgs: [...wordIds, ...wordIds],
+      );
     }
     await db.delete('words', where: 'word_book_id = ?', whereArgs: [id]);
     await db.delete('word_books', where: 'id = ?', whereArgs: [id]);
@@ -175,14 +238,22 @@ class DbHelper {
 
   Future<WordBook?> getWordBook(int id) async {
     final db = await database;
-    final rows = await db.query('word_books', where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      'word_books',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return rows.isEmpty ? null : WordBook.fromMap(rows.first);
   }
 
   Future<WordBook?> getDefaultWordBook() async {
     final db = await database;
-    final rows =
-        await db.query('word_books', where: 'is_default = 1', limit: 1);
+    final rows = await db.query(
+      'word_books',
+      where: 'is_default = 1',
+      limit: 1,
+    );
     return rows.isEmpty ? null : WordBook.fromMap(rows.first);
   }
 
@@ -194,7 +265,7 @@ class DbHelper {
       FROM word_books wb
       LEFT JOIN words w ON w.word_book_id = wb.id
       GROUP BY wb.id
-      ORDER BY wb.is_default DESC, wb.created_at DESC
+      ORDER BY wb.is_default DESC, wb.sort_order ASC
     ''');
     return rows.map((row) {
       final book = WordBook.fromMap(row);
@@ -212,13 +283,21 @@ class DbHelper {
 
   Future<void> updateWord(Word word) async {
     final db = await database;
-    await db.update('words', word.toMap(), where: 'id = ?', whereArgs: [word.id]);
+    await db.update(
+      'words',
+      word.toMap(),
+      where: 'id = ?',
+      whereArgs: [word.id],
+    );
   }
 
   Future<void> deleteWord(int id) async {
     final db = await database;
-    await db.delete('word_relations',
-        where: 'word_id_a = ? OR word_id_b = ?', whereArgs: [id, id]);
+    await db.delete(
+      'word_relations',
+      where: 'word_id_a = ? OR word_id_b = ?',
+      whereArgs: [id, id],
+    );
     await db.delete('words', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -232,7 +311,10 @@ class DbHelper {
     );
   }
 
-  Future<void> moveWordsByBooks(List<int> sourceBookIds, int targetWordBookId) async {
+  Future<void> moveWordsByBooks(
+    List<int> sourceBookIds,
+    int targetWordBookId,
+  ) async {
     if (sourceBookIds.isEmpty) return;
     final db = await database;
     final placeholders = List.filled(sourceBookIds.length, '?').join(',');
@@ -250,7 +332,12 @@ class DbHelper {
 
   Future<Word?> getWordById(int id) async {
     final db = await database;
-    final maps = await db.query('words', where: 'id = ?', whereArgs: [id], limit: 1);
+    final maps = await db.query(
+      'words',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return maps.isEmpty ? null : Word.fromMap(maps.first);
   }
 
@@ -265,18 +352,22 @@ class DbHelper {
     return maps.map(Word.fromMap).toList();
   }
 
-  Future<({int total, int recentCount, int avgProficiency})> getWordStats() async {
+  Future<({int total, int recentCount, int avgProficiency})>
+  getWordStats() async {
     final db = await database;
     final weekAgo = DateTime.now()
         .subtract(const Duration(days: 7))
         .millisecondsSinceEpoch;
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT
         COUNT(*) as total,
         SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as recent,
         COALESCE(CAST(ROUND(AVG(CAST(proficiency AS REAL))) AS INTEGER), 0) as avg_prof
       FROM words
-    ''', [weekAgo]);
+    ''',
+      [weekAgo],
+    );
     final row = rows.first;
     return (
       total: row['total'] as int,
@@ -290,14 +381,19 @@ class DbHelper {
     final weekAgo = DateTime.now()
         .subtract(const Duration(days: 7))
         .millisecondsSinceEpoch;
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT w.*, wb.name as book_name
       FROM words w
       JOIN word_books wb ON w.word_book_id = wb.id
       WHERE w.created_at >= ?
       ORDER BY w.created_at DESC
-    ''', [weekAgo]);
-    return rows.map((r) => (Word.fromMap(r), r['book_name'] as String)).toList();
+    ''',
+      [weekAgo],
+    );
+    return rows
+        .map((r) => (Word.fromMap(r), r['book_name'] as String))
+        .toList();
   }
 
   Future<List<(Word, String)>> getLeastProficientWordsWithBook() async {
@@ -309,20 +405,25 @@ class DbHelper {
       WHERE w.proficiency < ${ProficiencyLevel.unfamiliar.score}
       ORDER BY w.proficiency ASC, w.created_at DESC
     ''');
-    return rows.map((r) => (Word.fromMap(r), r['book_name'] as String)).toList();
+    return rows
+        .map((r) => (Word.fromMap(r), r['book_name'] as String))
+        .toList();
   }
 
   Future<List<(Word, String)>> searchWords(String query) async {
     final db = await database;
     final pattern = '%$query%';
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT w.*, wb.name as book_name
       FROM words w
       JOIN word_books wb ON w.word_book_id = wb.id
       WHERE w.english LIKE ? OR w.chinese LIKE ?
       ORDER BY w.english ASC
       LIMIT 30
-    ''', [pattern, pattern]);
+    ''',
+      [pattern, pattern],
+    );
     return rows.map((row) {
       final word = Word.fromMap(row);
       final bookName = row['book_name'] as String;
@@ -338,8 +439,10 @@ class DbHelper {
     for (final relatedId in relatedIds) {
       final a = wordId < relatedId ? wordId : relatedId;
       final b = wordId < relatedId ? relatedId : wordId;
-      batch.insert('word_relations', {'word_id_a': a, 'word_id_b': b},
-          conflictAlgorithm: ConflictAlgorithm.ignore);
+      batch.insert('word_relations', {
+        'word_id_a': a,
+        'word_id_b': b,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
     await batch.commit(noResult: true);
   }
@@ -348,19 +451,25 @@ class DbHelper {
     final db = await database;
     final a = wordId < relatedId ? wordId : relatedId;
     final b = wordId < relatedId ? relatedId : wordId;
-    await db.delete('word_relations',
-        where: 'word_id_a = ? AND word_id_b = ?', whereArgs: [a, b]);
+    await db.delete(
+      'word_relations',
+      where: 'word_id_a = ? AND word_id_b = ?',
+      whereArgs: [a, b],
+    );
   }
 
   Future<List<Word>> getRelatedWords(int wordId) async {
     final db = await database;
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT w.* FROM words w
       JOIN word_relations r
         ON (r.word_id_a = ? AND w.id = r.word_id_b)
         OR (r.word_id_b = ? AND w.id = r.word_id_a)
       ORDER BY w.english ASC
-    ''', [wordId, wordId]);
+    ''',
+      [wordId, wordId],
+    );
     return rows.map(Word.fromMap).toList();
   }
 }
