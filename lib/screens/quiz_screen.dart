@@ -4,20 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../app_theme.dart';
 import '../database/db_helper.dart';
+import '../models/example_sentence.dart';
 import '../models/word.dart';
 import '../services/ad_service.dart';
+import '../services/ai_service.dart';
 import '../services/settings_service.dart';
 import '../services/tts_service.dart';
 import '../utils/list_util.dart';
 import '../utils/proficiency_util.dart';
 import '../widgets/banner_ad_widget.dart';
 
-enum _QuizType {
-  enToCn,
-  cnToEn,
-  fillInBlank,
-  enDefinition,
-}
+enum _QuizType { enToCn, cnToEn, fillInBlank, enDefinition, aiFillInBlank }
 
 class _Question {
   final Word word;
@@ -62,6 +59,7 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   final _db = DbHelper();
+  final _settings = SettingsService();
   final _answerCtrl = TextEditingController();
   final _answerFocus = FocusNode();
   final _random = Random();
@@ -74,6 +72,9 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _isCorrect = false;
   bool _loading = true;
   bool _awaitingAd = false;
+
+  AiService? _aiService;
+  String? _aiQuizPromptTemplate;
 
   @override
   void initState() {
@@ -130,9 +131,17 @@ class _QuizScreenState extends State<QuizScreen> {
     final all = widget.wordBookId != null
         ? await _db.getWordsByWordBook(widget.wordBookId!)
         : await _db.getAllWords();
-    final maxProficiency = await SettingsService().getQuizMaxProficiency();
+    final maxProficiency = await _settings.getQuizMaxProficiency();
     final words = all.where((w) => w.proficiency <= maxProficiency).toList();
-    final questions = _generateQuestions(words);
+
+    if (await _settings.getAiQuizEnabled()) {
+      _aiService = await _settings.getActiveService();
+      if (_aiService != null) {
+        _aiQuizPromptTemplate = await _settings.getPrompt('aiQuiz');
+      }
+    }
+
+    final questions = await _generateQuestions(words);
 
     await _maybeShowInterstitialOnStart();
 
@@ -144,54 +153,122 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
-  List<_Question> _generateQuestions(List<Word> words) {
-    return (List<Word>.from(words)..shuffle(_random))
-        .take(10)
-        .map((word) {
-          final hasBlankableExample = word.examples.any((ex) =>
-              ex.sentence.toLowerCase().contains(word.english.toLowerCase()));
-          final availableTypes = [
-            _QuizType.enToCn,
-            _QuizType.cnToEn,
-            if (hasBlankableExample) _QuizType.fillInBlank,
-            if (word.englishExplanation != null) _QuizType.enDefinition,
-          ];
-          return _buildQuestion(
-              word, ListUtil.getRandomElement(availableTypes, _random));
-        })
-        .toList();
+  Future<List<_Question>> _generateQuestions(List<Word> words) async {
+    final selected = (List<Word>.from(words)..shuffle(_random)).take(10);
+    final aiAvailable = _aiService != null && _aiQuizPromptTemplate != null;
+    final questions = <_Question>[];
+
+    for (final word in selected) {
+      final hasBlankableExample = word.examples.any(
+        (ex) => ex.sentence.toLowerCase().contains(word.english.toLowerCase()),
+      );
+      final availableTypes = [
+        _QuizType.enToCn,
+        _QuizType.cnToEn,
+        if (hasBlankableExample) _QuizType.fillInBlank,
+        if (word.englishExplanation != null) _QuizType.enDefinition,
+        if (aiAvailable) _QuizType.aiFillInBlank,
+      ];
+
+      var type = ListUtil.getRandomElement(availableTypes, _random);
+
+      if (type == _QuizType.aiFillInBlank) {
+        final aiSentence = await _tryGenerateAiQuizSentence(word);
+        if (aiSentence != null) {
+          questions.add(_buildQuestion(word, type, aiSentence: aiSentence));
+          continue;
+        }
+        // API 失敗，或句子沒包含這個單字：放棄這次 AI 出題，從候選題型移除後重抽。
+        availableTypes.remove(_QuizType.aiFillInBlank);
+        type = ListUtil.getRandomElement(availableTypes, _random);
+      }
+
+      questions.add(_buildQuestion(word, type));
+    }
+
+    return questions;
   }
 
-  _Question _buildQuestion(Word word, _QuizType type) {
+  /// 準備 AI 出題用的例句，失敗（含沒網路）或句子沒包含目標單字都回傳 null，
+  /// 由呼叫端改用其他題型，不會讓整場複習失敗。
+  Future<ExampleSentence?> _tryGenerateAiQuizSentence(Word word) async {
+    try {
+      final prompt =
+          _aiQuizPromptTemplate!.replaceAll(
+            SettingsService.wordPlaceholder,
+            word.english,
+          ) +
+          ExampleSentence.jsonFormatSuffix;
+      final raw = await _aiService!.complete(prompt);
+      final result = ExampleSentence.parseJson(raw);
+      if (!result.sentence.toLowerCase().contains(word.english.toLowerCase())) {
+        return null;
+      }
+      return result;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _blankedPrompt(Word word, ExampleSentence ex) {
+    final blanked = ex.sentence.replaceAll(
+      RegExp(RegExp.escape(word.english), caseSensitive: false),
+      '___',
+    );
+    return ex.chineseTranslation != null
+        ? '${ex.chineseTranslation}\n\n$blanked'
+        : blanked;
+  }
+
+  _Question _buildQuestion(
+    Word word,
+    _QuizType type, {
+    ExampleSentence? aiSentence,
+  }) {
     switch (type) {
       case _QuizType.enToCn:
         return _Question(
-            word: word, type: type, prompt: word.english, answer: word.chinese);
+          word: word,
+          type: type,
+          prompt: word.english,
+          answer: word.chinese,
+        );
       case _QuizType.cnToEn:
         return _Question(
-            word: word, type: type, prompt: word.chinese, answer: word.english);
+          word: word,
+          type: type,
+          prompt: word.chinese,
+          answer: word.english,
+        );
       case _QuizType.enDefinition:
         return _Question(
-            word: word,
-            type: type,
-            prompt: word.englishExplanation!,
-            answer: word.english);
+          word: word,
+          type: type,
+          prompt: word.englishExplanation!,
+          answer: word.english,
+        );
       case _QuizType.fillInBlank:
         final blankable = word.examples
-            .where((ex) => ex.sentence
-                .toLowerCase()
-                .contains(word.english.toLowerCase()))
+            .where(
+              (ex) => ex.sentence.toLowerCase().contains(
+                word.english.toLowerCase(),
+              ),
+            )
             .toList();
         final ex = ListUtil.getRandomElement(blankable, _random);
-        final blanked = ex.sentence.replaceAll(
-          RegExp(RegExp.escape(word.english), caseSensitive: false),
-          '___',
-        );
-        final prompt = ex.chineseTranslation != null
-            ? '${ex.chineseTranslation}\n\n$blanked'
-            : blanked;
         return _Question(
-            word: word, type: type, prompt: prompt, answer: word.english);
+          word: word,
+          type: type,
+          prompt: _blankedPrompt(word, ex),
+          answer: word.english,
+        );
+      case _QuizType.aiFillInBlank:
+        return _Question(
+          word: word,
+          type: type,
+          prompt: _blankedPrompt(word, aiSentence!),
+          answer: word.english,
+        );
     }
   }
 
@@ -202,21 +279,26 @@ class _QuizScreenState extends State<QuizScreen> {
         .split(RegExp(r'[；;，,]'))
         .map((s) => s.trim().toLowerCase())
         .where((s) => s.isNotEmpty);
-    final correct = acceptedAnswers.any((a) => a == userInput) ||
+    final correct =
+        acceptedAnswers.any((a) => a == userInput) ||
         userInput == _questions[_current].answer.trim().toLowerCase();
-    final newProficiency =
-        (word.proficiency + (correct ? 10 : -10)).clamp(ProficiencyLevel.veryUnfamiliar.score, ProficiencyLevel.proficient.score);
+    final newProficiency = (word.proficiency + (correct ? 10 : -10)).clamp(
+      ProficiencyLevel.veryUnfamiliar.score,
+      ProficiencyLevel.proficient.score,
+    );
     setState(() {
       _answered = true;
       _isCorrect = correct;
       if (correct) _correct++;
-      _results.add(_QuizResult(
-        question: _questions[_current],
-        isCorrect: correct,
-        oldProficiency: word.proficiency,
-        newProficiency: newProficiency,
-        userAnswer: _answerCtrl.text.trim(),
-      ));
+      _results.add(
+        _QuizResult(
+          question: _questions[_current],
+          isCorrect: correct,
+          oldProficiency: word.proficiency,
+          newProficiency: newProficiency,
+          userAnswer: _answerCtrl.text.trim(),
+        ),
+      );
     });
   }
 
@@ -242,10 +324,11 @@ class _QuizScreenState extends State<QuizScreen> {
       case _QuizType.enToCn:
         return '請輸入中文意思：';
       case _QuizType.cnToEn:
-        return '請輸入英文單字：';
+        return '請根據翻譯輸入英文單字：';
       case _QuizType.enDefinition:
         return '根據英文解釋，填入對應的英文單字：';
       case _QuizType.fillInBlank:
+      case _QuizType.aiFillInBlank:
         return '請填入缺少的英文單字：';
     }
   }
@@ -254,9 +337,12 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       if (_awaitingAd) {
-        return const Scaffold(backgroundColor: Colors.black, body: SizedBox.shrink());
+        return const Scaffold(
+          backgroundColor: Colors.black,
+          body: SizedBox.shrink(),
+        );
       }
-      return const Scaffold(body: SizedBox.shrink());
+      return const Scaffold(body: Center(child: _PreparingIndicator()));
     }
     if (_questions.isEmpty) {
       return Scaffold(
@@ -294,7 +380,10 @@ class _QuizScreenState extends State<QuizScreen> {
                       const SizedBox(height: 16),
                       const Text(
                         '以下情況將使該欄位不納入出題範圍：',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const _QuizInfoItem(
@@ -326,8 +415,10 @@ class _QuizScreenState extends State<QuizScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(_questionLabel(question.type),
-                  style: const TextStyle(color: Colors.grey)),
+              Text(
+                _questionLabel(question.type),
+                style: const TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 16),
               Card(
                 child: Padding(
@@ -338,7 +429,9 @@ class _QuizScreenState extends State<QuizScreen> {
                             Text(
                               question.prompt,
                               style: const TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold),
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
@@ -351,7 +444,9 @@ class _QuizScreenState extends State<QuizScreen> {
                       : Text(
                           question.prompt,
                           style: const TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold),
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                 ),
@@ -407,7 +502,8 @@ class _QuizScreenState extends State<QuizScreen> {
                 GradientButton(
                   onPressed: _next,
                   child: Text(
-                      _current + 1 >= _questions.length ? '查看結果' : '下一題'),
+                    _current + 1 >= _questions.length ? '查看結果' : '下一題',
+                  ),
                 ),
             ],
           ),
@@ -446,8 +542,7 @@ class _QuizScreenState extends State<QuizScreen> {
           children: [
             Text(
               '$_correct / $total',
-              style: const TextStyle(
-                  fontSize: 64, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
@@ -455,8 +550,8 @@ class _QuizScreenState extends State<QuizScreen> {
               percent >= 0.8
                   ? '太棒了！'
                   : percent >= 0.6
-                      ? '不錯！繼續加油'
-                      : '再多複習幾次吧',
+                  ? '不錯！繼續加油'
+                  : '再多複習幾次吧',
               style: const TextStyle(fontSize: 18, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -508,39 +603,52 @@ class _QuizScreenState extends State<QuizScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(result.question.word.english,
-                        style:
-                            const TextStyle(fontWeight: FontWeight.w600)),
-                    Text(result.question.word.chinese,
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textMuted)),
+                    Text(
+                      result.question.word.english,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      result.question.word.chinese,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                     if (!result.isCorrect) ...[
                       const SizedBox(height: 4),
-                      Text('你的答案：${result.userAnswer}',
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.red)),
+                      Text(
+                        '你的答案：${result.userAnswer}',
+                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                      ),
                     ],
                   ],
                 ),
               ),
               TweenAnimationBuilder<int>(
                 tween: IntTween(
-                    begin: result.oldProficiency,
-                    end: result.newProficiency),
+                  begin: result.oldProficiency,
+                  end: result.newProficiency,
+                ),
                 duration: const Duration(milliseconds: 700),
                 curve: Curves.easeOut,
                 builder: (_, value, _) => Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('$value%',
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600)),
-                    Text(deltaText,
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: deltaColor,
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      '$value%',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      deltaText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: deltaColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -549,6 +657,37 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
       ),
     );
+  }
+}
+
+class _PreparingIndicator extends StatefulWidget {
+  const _PreparingIndicator();
+
+  @override
+  State<_PreparingIndicator> createState() => _PreparingIndicatorState();
+}
+
+class _PreparingIndicatorState extends State<_PreparingIndicator> {
+  Timer? _timer;
+  int _dotCount = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      setState(() => _dotCount = _dotCount % 3 + 1);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('準備中${'.' * _dotCount}');
   }
 }
 
@@ -565,9 +704,7 @@ class _QuizInfoItem extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: Colors.grey),
         const SizedBox(width: 10),
-        Expanded(
-          child: Text(text, style: const TextStyle(fontSize: 14)),
-        ),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
       ],
     );
   }

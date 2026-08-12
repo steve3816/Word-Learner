@@ -15,6 +15,7 @@ class SettingsService {
   static const _quizMaxProficiencyKey = 'quiz_max_proficiency';
   static const _showProficiencyIconsKey = 'show_proficiency_icons';
   static const _showCreatedAtKey = 'show_created_at';
+  static const _aiQuizEnabledKey = 'ai_quiz_enabled';
 
   /// 列表類畫面是否顯示熟練度表情圖示。app 啟動時由 [loadShowProficiencyIcons] 從
   /// SharedPreferences 讀入初始值，之後透過 [setShowProficiencyIcons] 同步更新，
@@ -47,7 +48,13 @@ class SettingsService {
     showCreatedAt.value = value;
   }
 
-  static const promptFields = ['english', 'chinese', 'explanation', 'example'];
+  static const promptFields = [
+    'english',
+    'chinese',
+    'explanation',
+    'example',
+    'aiQuiz',
+  ];
   static const wordPlaceholder = '{word}';
 
   // Cached default prompts loaded from assets/config.json
@@ -78,6 +85,8 @@ class SettingsService {
         return '英文解釋';
       case 'example':
         return '例句＋中文翻譯';
+      case 'aiQuiz':
+        return 'AI 出題例句填空';
       default:
         return field;
     }
@@ -172,6 +181,17 @@ class SettingsService {
   Future<void> setQuizMaxProficiency(int value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_quizMaxProficiencyKey, value);
+  }
+
+  /// 複習出題時是否有機率使用 AI 即時生成例句填空題，預設關閉（會產生 API 費用）。
+  Future<bool> getAiQuizEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_aiQuizEnabledKey) ?? false;
+  }
+
+  Future<void> setAiQuizEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_aiQuizEnabledKey, value);
   }
 
   Future<bool> hasAnyKey() async {

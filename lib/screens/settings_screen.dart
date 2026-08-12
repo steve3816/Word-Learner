@@ -25,9 +25,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _focusedPromptField;
   AiProvider? _selectedProvider;
   int _quizMaxProficiency = ProficiencyLevel.proficient.score;
+  bool _aiQuizEnabled = false;
   bool _loading = true;
 
   RewardedAd? _rewardedAd;
+
+  /// 是否已經設定好可用的 AI（選了提供者、且該提供者的 API Key 有填），
+  /// 「AI 出題」開關要靠這個才能打開。
+  bool get _aiFeatureEnabled =>
+      _selectedProvider != null &&
+      (_keyControllers[_selectedProvider]?.text.trim().isNotEmpty ?? false);
 
   @override
   void initState() {
@@ -123,9 +130,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _promptControllers[field]!.text = await _settings.getPrompt(field);
     }
     final quizMax = await _settings.getQuizMaxProficiency();
+    final aiQuizEnabled = await _settings.getAiQuizEnabled();
     setState(() {
       _selectedProvider = provider;
       _quizMaxProficiency = quizMax;
+      _aiQuizEnabled = aiQuizEnabled;
       _loading = false;
     });
   }
@@ -163,6 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     await _settings.setSelectedProvider(_selectedProvider);
     await _settings.setQuizMaxProficiency(_quizMaxProficiency);
+    await _settings.setAiQuizEnabled(_aiQuizEnabled && _aiFeatureEnabled);
     for (final field in SettingsService.promptFields) {
       final text = _promptControllers[field]!.text.trim();
       await _settings.setPrompt(
@@ -569,12 +579,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 collapsedShape: const Border(),
                 leading: const Icon(Icons.school_outlined),
                 title: const Text(
-                  '複習出題熟練度範圍',
+                  '複習設定',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '出題熟練度範圍',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
                   RadioGroup<int>(
                     groupValue: _quizMaxProficiency,
                     onChanged: (v) => setState(() => _quizMaxProficiency = v!),
@@ -598,6 +615,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  const Divider(height: 24),
+                  const Text(
+                    'AI 出題',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('AI 出題'),
+                    value: _aiQuizEnabled && _aiFeatureEnabled,
+                    onChanged: _aiFeatureEnabled
+                        ? (v) => setState(() => _aiQuizEnabled = v)
+                        : null,
+                  ),
+                  const Text(
+                    '開啟後，複習時題目有機率為 AI 生成例句填空題',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                 ],
               ),

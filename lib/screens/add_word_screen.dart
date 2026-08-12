@@ -15,11 +15,7 @@ import 'word_relation_picker_screen.dart';
 
 // 這些是程式解析回應用的格式指示，不是使用者可調整的內容，所以不會顯示在
 // 長按提示詞彈窗裡，而是使用者編輯完內容後，送出前才附加回去。
-const _exampleFormatSuffix =
-    ' Also provide its Traditional Chinese translation. '
-    'Return a JSON object with exactly two fields: "sentence" (the English example) '
-    'and "chineseTranslation" (the Traditional Chinese translation). '
-    'Return only the JSON object, no markdown, no extra text.';
+// 例句＋中文翻譯的 JSON 格式指示見 [ExampleSentence.jsonFormatSuffix]（跟 quiz_screen.dart 共用）。
 const _sentenceOnlyFormatSuffix = '只回傳英文例句本身，不要任何解釋或翻譯。';
 const _translationOnlyFormatSuffix = '只回傳中文翻譯，不要任何解釋。';
 
@@ -415,7 +411,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
     setState(() => _examples[index].loading = true);
     try {
       final content = overridePrompt ?? _buildPrompt('example');
-      final prompt = '$content$_exampleFormatSuffix';
+      final prompt = '$content${ExampleSentence.jsonFormatSuffix}';
       final raw = await _aiService!.complete(prompt);
       final result = ExampleSentence.parseJson(raw);
       _examples[index].sentenceCtrl.text = result.sentence;
