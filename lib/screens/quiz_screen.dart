@@ -132,7 +132,9 @@ class _QuizScreenState extends State<QuizScreen> {
         ? await _db.getWordsByWordBook(widget.wordBookId!)
         : await _db.getAllWords();
     final maxProficiency = await _settings.getQuizMaxProficiency();
-    final words = all.where((w) => w.proficiency <= maxProficiency).toList();
+    final words = all
+        .where((w) => w.proficiency <= maxProficiency && !w.excludeFromQuiz)
+        .toList();
 
     if (await _settings.getAiQuizEnabled()) {
       _aiService = await _settings.getActiveService();
@@ -167,7 +169,7 @@ class _QuizScreenState extends State<QuizScreen> {
         _QuizType.cnToEn,
         if (hasBlankableExample) _QuizType.fillInBlank,
         if (word.englishExplanation != null) _QuizType.enDefinition,
-        if (aiAvailable) _QuizType.aiFillInBlank,
+        if (aiAvailable && !word.excludeFromAiQuiz) _QuizType.aiFillInBlank,
       ];
 
       var type = ListUtil.getRandomElement(availableTypes, _random);

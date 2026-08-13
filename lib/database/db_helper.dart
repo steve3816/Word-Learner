@@ -21,7 +21,7 @@ class DbHelper {
     final path = join(await getDatabasesPath(), 'vocab.db');
     return openDatabase(
       path,
-      version: 9,
+      version: 11,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE word_books(
@@ -48,7 +48,9 @@ class DbHelper {
             created_at INTEGER NOT NULL,
             word_book_id INTEGER NOT NULL,
             proficiency INTEGER NOT NULL DEFAULT 0,
-            notes TEXT
+            notes TEXT,
+            exclude_from_quiz INTEGER NOT NULL DEFAULT 0,
+            exclude_from_ai_quiz INTEGER NOT NULL DEFAULT 0
           )
         ''');
         await db.execute('''
@@ -167,6 +169,16 @@ class DbHelper {
             );
           }
           await batch.commit(noResult: true);
+        }
+        if (oldVersion < 10) {
+          await db.execute(
+            'ALTER TABLE words ADD COLUMN exclude_from_quiz INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+        if (oldVersion < 11) {
+          await db.execute(
+            'ALTER TABLE words ADD COLUMN exclude_from_ai_quiz INTEGER NOT NULL DEFAULT 0',
+          );
         }
       },
     );

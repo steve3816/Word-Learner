@@ -66,6 +66,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
   bool _loadingChinese = false;
   bool _loadingExplanation = false;
   late int _proficiency;
+  late bool _excludeFromQuiz;
+  late bool _excludeFromAiQuiz;
   late bool _isEditing;
   Word? _currentWord;
 
@@ -83,6 +85,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
     _currentWord = widget.word;
     _proficiency =
         widget.word?.proficiency ?? ProficiencyLevel.veryUnfamiliar.score;
+    _excludeFromQuiz = widget.word?.excludeFromQuiz ?? false;
+    _excludeFromAiQuiz = widget.word?.excludeFromAiQuiz ?? false;
     if (widget.word != null) {
       _loadWordList();
       _loadRelatedWords();
@@ -147,6 +151,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
     setState(() {
       _currentWord = word;
       _proficiency = word.proficiency;
+      _excludeFromQuiz = word.excludeFromQuiz;
+      _excludeFromAiQuiz = word.excludeFromAiQuiz;
       _wordIndex = index;
       _showTitleWord = false;
       _englishCtrl.text = word.english;
@@ -452,6 +458,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
     }
     setState(() {
       _proficiency = word.proficiency;
+      _excludeFromQuiz = word.excludeFromQuiz;
+      _excludeFromAiQuiz = word.excludeFromAiQuiz;
       _isEditing = false;
     });
   }
@@ -516,6 +524,8 @@ class _AddWordScreenState extends State<AddWordScreen> {
       wordBookId: _currentWord?.wordBookId ?? widget.wordBookId!,
       proficiency: _proficiency,
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      excludeFromQuiz: _excludeFromQuiz,
+      excludeFromAiQuiz: _excludeFromAiQuiz,
     );
     try {
       if (_currentWord == null) {
@@ -1269,6 +1279,49 @@ class _AddWordScreenState extends State<AddWordScreen> {
                                 ),
                               ),
                             ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: _sectionCard(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 4, 16, 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(12, 8, 0, 0),
+                            child: Text(
+                              '複習設定',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          ListTile(
+                            dense: true,
+                            title: const Text('不納入複習出題'),
+                            trailing: Checkbox(
+                              value: _excludeFromQuiz,
+                              onChanged: (v) =>
+                                  setState(() => _excludeFromQuiz = v ?? false),
+                            ),
+                          ),
+                          ListTile(
+                            dense: true,
+                            title: const Text('不納入 AI 出題'),
+                            trailing: Checkbox(
+                              value: _excludeFromAiQuiz,
+                              onChanged: (v) => setState(
+                                () => _excludeFromAiQuiz = v ?? false,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
