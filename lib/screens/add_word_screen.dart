@@ -1168,13 +1168,13 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 ),
                 const SizedBox(height: 12),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: TextFormField(
                         controller: _explanationCtrl,
                         decoration: const InputDecoration(labelText: '英文解釋'),
-                        minLines: 2,
+                        minLines: 1,
                         maxLines: null,
                       ),
                     ),
