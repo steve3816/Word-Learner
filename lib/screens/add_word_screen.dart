@@ -761,8 +761,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                         word.englishExplanation!,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: AppColors.textMuted,
-                          fontStyle: FontStyle.italic,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
