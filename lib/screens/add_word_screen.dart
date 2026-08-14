@@ -945,70 +945,71 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   Widget _buildExampleEntry(int index) {
     final entry = _examples[index];
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  '例句 ${index + 1}',
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '例句 ${index + 1}',
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const Spacer(),
+              if (_aiService != null)
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _englishCtrl,
+                  builder: (_, value, _) {
+                    if (value.text.trim().isEmpty) {
+                      return const SizedBox(width: 48, height: 48);
+                    }
+                    return _aiIconBtn(
+                      loading: entry.loading,
+                      onPressed: () => _generateExample(index),
+                      onLongPress: () async {
+                        final edited = await _promptOverrideDialog(
+                          _buildPrompt('example'),
+                          SettingsService.promptLabel('example'),
+                        );
+                        if (edited != null) {
+                          await _generateExample(index, overridePrompt: edited);
+                        }
+                      },
+                    );
+                  },
                 ),
-                const Spacer(),
-                if (_aiService != null)
-                  ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _englishCtrl,
-                    builder: (_, value, _) {
-                      if (value.text.trim().isEmpty) {
-                        return const SizedBox(width: 48, height: 48);
-                      }
-                      return _aiIconBtn(
-                        loading: entry.loading,
-                        onPressed: () => _generateExample(index),
-                        onLongPress: () async {
-                          final edited = await _promptOverrideDialog(
-                            _buildPrompt('example'),
-                            SettingsService.promptLabel('example'),
-                          );
-                          if (edited != null) {
-                            await _generateExample(
-                              index,
-                              overridePrompt: edited,
-                            );
-                          }
-                        },
-                      );
-                    },
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: '刪除',
-                  onPressed: () => _removeExample(index),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: entry.sentenceCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '英文例句',
-                      border: OutlineInputBorder(),
-                    ),
-                    minLines: 2,
-                    maxLines: null,
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: '刪除',
+                onPressed: () => _removeExample(index),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Stack(
+            children: [
+              TextField(
+                controller: entry.sentenceCtrl,
+                decoration: InputDecoration(
+                  labelText: '英文例句',
+                  border: const OutlineInputBorder(),
+                  // 右邊多留空間，避免文字長到跟右上角的魔法棒圖示疊在一起。
+                  contentPadding: EdgeInsets.fromLTRB(
+                    12,
+                    12,
+                    _aiService != null ? 44 : 12,
+                    12,
                   ),
                 ),
-                if (_aiService != null) ...[
-                  const SizedBox(width: 6),
-                  ValueListenableBuilder<TextEditingValue>(
+                minLines: 1,
+                maxLines: null,
+              ),
+              if (_aiService != null)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: ValueListenableBuilder<TextEditingValue>(
                     valueListenable: entry.translationCtrl,
                     builder: (_, value, _) => value.text.trim().isEmpty
                         ? const SizedBox.shrink()
@@ -1029,27 +1030,32 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             },
                           ),
                   ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: entry.translationCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '例句中文翻譯',
-                      border: OutlineInputBorder(),
-                    ),
-                    minLines: 2,
-                    maxLines: null,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Stack(
+            children: [
+              TextField(
+                controller: entry.translationCtrl,
+                decoration: InputDecoration(
+                  labelText: '例句中文翻譯',
+                  border: const OutlineInputBorder(),
+                  contentPadding: EdgeInsets.fromLTRB(
+                    12,
+                    12,
+                    _aiService != null ? 44 : 12,
+                    12,
                   ),
                 ),
-                if (_aiService != null) ...[
-                  const SizedBox(width: 6),
-                  ValueListenableBuilder<TextEditingValue>(
+                minLines: 1,
+                maxLines: null,
+              ),
+              if (_aiService != null)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: ValueListenableBuilder<TextEditingValue>(
                     valueListenable: entry.sentenceCtrl,
                     builder: (_, value, _) => value.text.trim().isEmpty
                         ? const SizedBox.shrink()
@@ -1070,11 +1076,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             },
                           ),
                   ),
-                ],
-              ],
-            ),
-          ],
-        ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1419,24 +1424,53 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const Text(
-                      '例句',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                const SizedBox(height: 24),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: _sectionCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(1),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            color: AppColors.secondary,
+                            child: const Text(
+                              '例句',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (int i = 0; i < _examples.length; i++) ...[
+                                  if (i > 0)
+                                    const Divider(
+                                      height: 1,
+                                      color: AppColors.borderSubtle,
+                                    ),
+                                  _buildExampleEntry(i),
+                                ],
+                                const SizedBox(height: 4),
+                                Center(child: _circleAddBtn(_addExample)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    _circleAddBtn(_addExample),
-                  ],
+                  ),
                 ),
-                for (int i = 0; i < _examples.length; i++) ...[
-                  const SizedBox(height: 8),
-                  _buildExampleEntry(i),
-                ],
                 const SizedBox(height: 16),
               ],
             ),
