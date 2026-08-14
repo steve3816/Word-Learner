@@ -1210,75 +1210,84 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   borderRadius: BorderRadius.circular(14),
                   child: _sectionCard(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      padding: const EdgeInsets.all(1),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              const Text(
-                                '關聯字',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            color: AppColors.secondary,
+                            child: const Text(
+                              '關聯字',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
                               ),
-                              const Spacer(),
-                              _circleAddBtn(_openRelationPicker),
-                            ],
+                            ),
                           ),
-                          if (_relatedWords.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 4),
-                              child: Text(
-                                '尚無關聯字',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                            )
-                          else
-                            for (int i = 0; i < _relatedWords.length; i++) ...[
-                              if (i > 0)
-                                const Divider(
-                                  height: 1,
-                                  color: AppColors.borderSubtle,
-                                ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      _relatedWords[i].english,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (
+                                  int i = 0;
+                                  i < _relatedWords.length;
+                                  i++
+                                ) ...[
+                                  if (i > 0)
+                                    const Divider(
+                                      height: 1,
+                                      color: AppColors.borderSubtle,
                                     ),
-                                    const Spacer(),
-                                    Text(
-                                      _relatedWords[i].chinese,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textMuted,
-                                      ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
                                     ),
-                                    const SizedBox(width: 4),
-                                    IconButton(
-                                      icon: const Icon(Icons.close, size: 18),
-                                      color: AppColors.textMuted,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                      onPressed: () =>
-                                          _removeRelation(_relatedWords[i]),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          _relatedWords[i].english,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Text(
+                                          _relatedWords[i].chinese,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textMuted,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.close,
+                                            size: 18,
+                                          ),
+                                          color: AppColors.textMuted,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () =>
+                                              _removeRelation(_relatedWords[i]),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
+                                ],
+                                const SizedBox(height: 4),
+                                Center(
+                                  child: _circleAddBtn(_openRelationPicker),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1289,37 +1298,50 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   borderRadius: BorderRadius.circular(14),
                   child: _sectionCard(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 4, 16, 4),
+                      padding: const EdgeInsets.all(1),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(12, 8, 0, 0),
-                            child: Text(
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            color: AppColors.secondary,
+                            child: const Text(
                               '複習設定',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
+                                color: Colors.white,
                               ),
                             ),
                           ),
-                          ListTile(
-                            dense: true,
-                            title: const Text('不納入複習出題'),
-                            trailing: Checkbox(
-                              value: _excludeFromQuiz,
-                              onChanged: (v) =>
-                                  setState(() => _excludeFromQuiz = v ?? false),
-                            ),
-                          ),
-                          ListTile(
-                            dense: true,
-                            title: const Text('不納入 AI 出題'),
-                            trailing: Checkbox(
-                              value: _excludeFromAiQuiz,
-                              onChanged: (v) => setState(
-                                () => _excludeFromAiQuiz = v ?? false,
-                              ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 4, 16, 4),
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  dense: true,
+                                  title: const Text('不納入複習出題'),
+                                  trailing: Checkbox(
+                                    value: _excludeFromQuiz,
+                                    onChanged: (v) => setState(
+                                      () => _excludeFromQuiz = v ?? false,
+                                    ),
+                                  ),
+                                ),
+                                ListTile(
+                                  dense: true,
+                                  title: const Text('不納入 AI 出題'),
+                                  trailing: Checkbox(
+                                    value: _excludeFromAiQuiz,
+                                    onChanged: (v) => setState(
+                                      () => _excludeFromAiQuiz = v ?? false,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
