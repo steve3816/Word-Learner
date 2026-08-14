@@ -670,11 +670,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
 
   Widget _buildExampleView(ExampleSentence ex) => DecoratedBox(
     decoration: BoxDecoration(
-      color: AppColors.surfaceSelected,
-      borderRadius: BorderRadius.circular(10),
+      border: Border(left: BorderSide(color: AppColors.secondary, width: 2)),
     ),
     child: Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(14, 0, 10, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -925,7 +924,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                       initiallyExpanded: true,
                       children: [
                         for (int i = 0; i < word.examples.length; i++) ...[
-                          if (i > 0) const SizedBox(height: 10),
+                          if (i > 0) const SizedBox(height: 20),
                           _buildExampleView(word.examples[i]),
                         ],
                       ],
