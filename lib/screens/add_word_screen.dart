@@ -1235,7 +1235,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1251,7 +1251,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                                     ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
+                                      vertical: 4,
                                     ),
                                     child: Row(
                                       children: [
@@ -1449,7 +1449,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
