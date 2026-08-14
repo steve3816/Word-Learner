@@ -1349,45 +1349,75 @@ class _AddWordScreenState extends State<AddWordScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  '熟練度',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: ProficiencyLevel.values.map((level) {
-                    final isSelected = _proficiency == level.score;
-                    return GestureDetector(
-                      onTap: () => setState(() => _proficiency = level.score),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.transparent,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(level.icon, size: 32),
-                            const SizedBox(height: 4),
-                            Text(
-                              level.label,
-                              style: const TextStyle(fontSize: 11),
+                const SizedBox(height: 24),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: _sectionCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(1),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
                             ),
-                          ],
-                        ),
+                            color: AppColors.secondary,
+                            child: const Text(
+                              '熟練度',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: ProficiencyLevel.values.map((level) {
+                                final isSelected = _proficiency == level.score;
+                                return GestureDetector(
+                                  onTap: () => setState(
+                                    () => _proficiency = level.score,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                            : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Icon(level.icon, size: 32),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          level.label,
+                                          style: const TextStyle(fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(
