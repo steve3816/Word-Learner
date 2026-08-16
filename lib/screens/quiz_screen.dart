@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../app_theme.dart';
@@ -76,6 +77,10 @@ class _QuizScreenState extends State<QuizScreen> {
   AiService? _aiService;
   String? _aiQuizPromptTemplate;
 
+  final _confettiController = ConfettiController(
+    duration: const Duration(milliseconds: 1000),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +91,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void dispose() {
     _answerCtrl.dispose();
     _answerFocus.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
@@ -311,6 +317,9 @@ class _QuizScreenState extends State<QuizScreen> {
         _db.updateWord(r.question.word.copyWith(proficiency: r.newProficiency));
       }
       setState(() => _current = _questions.length);
+      if (_correct / _questions.length >= 0.8) {
+        _confettiController.play();
+      }
     } else {
       setState(() {
         _current++;
@@ -538,36 +547,58 @@ class _QuizScreenState extends State<QuizScreen> {
     final percent = _correct / total;
     return Scaffold(
       appBar: AppBar(title: const Text('複習結果')),
-      body: DotGridBackground(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-          children: [
-            Text(
-              '$_correct / $total',
-              style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      body: Stack(
+        children: [
+          DotGridBackground(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+              children: [
+                Text(
+                  '$_correct / $total',
+                  style: const TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  percent >= 0.8
+                      ? '太棒了！'
+                      : percent >= 0.6
+                      ? '不錯！繼續加油'
+                      : '再多複習幾次吧',
+                  style: const TextStyle(fontSize: 18, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                for (final result in _results) _buildResultRow(result),
+                const SizedBox(height: 16),
+                GradientButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('回到單字本'),
+                ),
+                const SizedBox(height: 16),
+                const Center(child: BannerAdWidget()),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              percent >= 0.8
-                  ? '太棒了！'
-                  : percent >= 0.6
-                  ? '不錯！繼續加油'
-                  : '再多複習幾次吧',
-              style: const TextStyle(fontSize: 18, color: Colors.grey),
-              textAlign: TextAlign.center,
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              numberOfParticles: 60,
+              minBlastForce: 10,
+              maxBlastForce: 30,
+              minimumSize: const Size(3, 3),
+              maximumSize: const Size(8, 5),
+              gravity: 0.3,
             ),
-            const SizedBox(height: 24),
-            for (final result in _results) _buildResultRow(result),
-            const SizedBox(height: 16),
-            GradientButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('回到單字本'),
-            ),
-            const SizedBox(height: 16),
-            const Center(child: BannerAdWidget()),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
