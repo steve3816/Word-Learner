@@ -359,7 +359,7 @@ class _QuizScreenState extends State<QuizScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('複習')),
         body: const DotGridBackground(
-          child: Center(child: Text('單字不足，請先新增更多單字。')),
+          child: Center(child: Text('單字不足或單字熟練度高於複習設定')),
         ),
       );
     }
