@@ -1091,114 +1091,137 @@ class _AddWordScreenState extends State<AddWordScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                Stack(
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _englishCtrl,
-                        decoration: const InputDecoration(labelText: '英文單字 *'),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? '請輸入英文單字' : null,
+                    TextFormField(
+                      controller: _englishCtrl,
+                      decoration: InputDecoration(
+                        labelText: '英文單字 *',
+                        contentPadding: EdgeInsets.fromLTRB(
+                          12,
+                          12,
+                          _aiService != null ? 44 : 12,
+                          12,
+                        ),
                       ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? '請輸入英文單字' : null,
                     ),
-                    if (_aiService != null) ...[
-                      const SizedBox(width: 6),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: _chineseCtrl,
-                        builder: (_, value, _) => value.text.trim().isEmpty
-                            ? const SizedBox.shrink()
-                            : _aiIconBtn(
-                                loading: _loadingEnglish,
-                                onPressed: _generateEnglish,
-                                onLongPress: () async {
-                                  final edited = await _promptOverrideDialog(
-                                    _defaultEnglishPrompt(),
-                                    SettingsService.promptLabel('english'),
-                                  );
-                                  if (edited != null) {
-                                    await _generateEnglish(
-                                      overridePrompt: edited,
+                    if (_aiService != null)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _chineseCtrl,
+                          builder: (_, value, _) => value.text.trim().isEmpty
+                              ? const SizedBox.shrink()
+                              : _aiIconBtn(
+                                  loading: _loadingEnglish,
+                                  onPressed: _generateEnglish,
+                                  onLongPress: () async {
+                                    final edited = await _promptOverrideDialog(
+                                      _defaultEnglishPrompt(),
+                                      SettingsService.promptLabel('english'),
                                     );
-                                  }
-                                },
-                              ),
+                                    if (edited != null) {
+                                      await _generateEnglish(
+                                        overridePrompt: edited,
+                                      );
+                                    }
+                                  },
+                                ),
+                        ),
                       ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                Stack(
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _chineseCtrl,
-                        decoration: const InputDecoration(labelText: '中文意思 *'),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? '請輸入中文意思' : null,
+                    TextFormField(
+                      controller: _chineseCtrl,
+                      decoration: InputDecoration(
+                        labelText: '中文意思 *',
+                        contentPadding: EdgeInsets.fromLTRB(
+                          12,
+                          12,
+                          _aiService != null ? 44 : 12,
+                          12,
+                        ),
                       ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? '請輸入中文意思' : null,
                     ),
-                    if (_aiService != null) ...[
-                      const SizedBox(width: 6),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: _englishCtrl,
-                        builder: (_, value, _) => value.text.trim().isEmpty
-                            ? const SizedBox.shrink()
-                            : _aiIconBtn(
-                                loading: _loadingChinese,
-                                onPressed: _generateChinese,
-                                onLongPress: () async {
-                                  final edited = await _promptOverrideDialog(
-                                    _buildPrompt('chinese'),
-                                    SettingsService.promptLabel('chinese'),
-                                  );
-                                  if (edited != null) {
-                                    await _generateChinese(
-                                      overridePrompt: edited,
+                    if (_aiService != null)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _englishCtrl,
+                          builder: (_, value, _) => value.text.trim().isEmpty
+                              ? const SizedBox.shrink()
+                              : _aiIconBtn(
+                                  loading: _loadingChinese,
+                                  onPressed: _generateChinese,
+                                  onLongPress: () async {
+                                    final edited = await _promptOverrideDialog(
+                                      _buildPrompt('chinese'),
+                                      SettingsService.promptLabel('chinese'),
                                     );
-                                  }
-                                },
-                              ),
+                                    if (edited != null) {
+                                      await _generateChinese(
+                                        overridePrompt: edited,
+                                      );
+                                    }
+                                  },
+                                ),
+                        ),
                       ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                Stack(
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _explanationCtrl,
-                        decoration: const InputDecoration(labelText: '英文解釋'),
-                        minLines: 1,
-                        maxLines: null,
+                    TextFormField(
+                      controller: _explanationCtrl,
+                      decoration: InputDecoration(
+                        labelText: '英文解釋',
+                        contentPadding: EdgeInsets.fromLTRB(
+                          12,
+                          12,
+                          _aiService != null ? 44 : 12,
+                          12,
+                        ),
                       ),
+                      minLines: 1,
+                      maxLines: null,
                     ),
-                    if (_aiService != null) ...[
-                      const SizedBox(width: 6),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: _englishCtrl,
-                        builder: (_, value, _) => value.text.trim().isEmpty
-                            ? const SizedBox.shrink()
-                            : _aiIconBtn(
-                                loading: _loadingExplanation,
-                                onPressed: _generateExplanation,
-                                onLongPress: () async {
-                                  final edited = await _promptOverrideDialog(
-                                    _buildPrompt('explanation'),
-                                    SettingsService.promptLabel('explanation'),
-                                  );
-                                  if (edited != null) {
-                                    await _generateExplanation(
-                                      overridePrompt: edited,
+                    if (_aiService != null)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _englishCtrl,
+                          builder: (_, value, _) => value.text.trim().isEmpty
+                              ? const SizedBox.shrink()
+                              : _aiIconBtn(
+                                  loading: _loadingExplanation,
+                                  onPressed: _generateExplanation,
+                                  onLongPress: () async {
+                                    final edited = await _promptOverrideDialog(
+                                      _buildPrompt('explanation'),
+                                      SettingsService.promptLabel(
+                                        'explanation',
+                                      ),
                                     );
-                                  }
-                                },
-                              ),
+                                    if (edited != null) {
+                                      await _generateExplanation(
+                                        overridePrompt: edited,
+                                      );
+                                    }
+                                  },
+                                ),
+                        ),
                       ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 12),
