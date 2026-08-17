@@ -256,9 +256,9 @@ class _AddWordScreenState extends State<AddWordScreen> {
   );
 
   String _defaultExampleSentencePrompt(int index) =>
-      '為英文單字「${_englishCtrl.text.trim()}」，'
+      '使用英文單字「${_englishCtrl.text.trim()}」，'
       '根據中文意思「${_examples[index].translationCtrl.text.trim()}」，'
-      '造一個自然的英文例句。';
+      '翻譯成英文。';
 
   String _defaultExampleTranslationPrompt(int index) =>
       '將以下英文例句翻譯成繁體中文：「${_examples[index].sentenceCtrl.text.trim()}」。';
