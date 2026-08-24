@@ -17,7 +17,14 @@ import 'quiz_screen.dart';
 class WordListScreen extends StatefulWidget {
   final WordBook wordBook;
 
-  const WordListScreen({super.key, required this.wordBook});
+  /// 進入畫面後自動打開新增單字（目前是從桌面小工具「新增單字」觸發）。
+  final bool autoAddWord;
+
+  const WordListScreen({
+    super.key,
+    required this.wordBook,
+    this.autoAddWord = false,
+  });
 
   @override
   State<WordListScreen> createState() => _WordListScreenState();
@@ -39,6 +46,21 @@ class _WordListScreenState extends State<WordListScreen> {
     super.initState();
     _wordBook = widget.wordBook;
     _loadWords();
+    if (widget.autoAddWord) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AddWordScreen(
+              wordBookId: widget.wordBook.id!,
+              viewAfterCreate: true,
+            ),
+          ),
+        );
+        if (mounted) await _loadWords();
+      });
+    }
   }
 
   Future<void> _loadWords() async {

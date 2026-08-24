@@ -43,7 +43,16 @@ class AddWordScreen extends StatefulWidget {
   final Word? word;
   final int? wordBookId;
 
-  const AddWordScreen({super.key, this.word, this.wordBookId});
+  /// 新增（而非編輯）存檔成功後，是否要留在這個畫面改顯示剛新增的單字，
+  /// 而不是照預設彈回上一頁。目前只有從桌面小工具新增單字時會用到。
+  final bool viewAfterCreate;
+
+  const AddWordScreen({
+    super.key,
+    this.word,
+    this.wordBookId,
+    this.viewAfterCreate = false,
+  });
 
   @override
   State<AddWordScreen> createState() => _AddWordScreenState();
@@ -537,7 +546,15 @@ class _AddWordScreenState extends State<AddWordScreen> {
           );
         }
         WidgetService.syncWords();
-        if (mounted) Navigator.pop(context);
+        if (!mounted) return;
+        if (widget.viewAfterCreate) {
+          setState(() {
+            _currentWord = word.copyWith(id: newId);
+            _isEditing = false;
+          });
+        } else {
+          Navigator.pop(context);
+        }
       } else {
         await _db.updateWord(word);
         WidgetService.syncWords();

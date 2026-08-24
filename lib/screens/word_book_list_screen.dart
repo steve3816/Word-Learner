@@ -100,11 +100,16 @@ class _WordBookListScreenState extends State<WordBookListScreen>
     if (uri.host == 'addword') {
       final id = int.tryParse(uri.queryParameters['wordBookId'] ?? '');
       if (id == null || id == -1) return;
+      final wordBook = await _db.getWordBook(id);
+      if (wordBook == null || !mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => AddWordScreen(wordBookId: id)),
+        await Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) =>
+                WordListScreen(wordBook: wordBook, autoAddWord: true),
+          ),
+          (route) => route.isFirst,
         );
         if (mounted) await _loadAll();
       });
