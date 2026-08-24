@@ -1,4 +1,4 @@
-package com.example.hello_flutter
+package com.steve.haword
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -37,7 +37,7 @@ class WordWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        const val ACTION_REFRESH = "com.example.hello_flutter.WIDGET_REFRESH"
+        const val ACTION_REFRESH = "com.steve.haword.WIDGET_REFRESH"
         private const val TAG = "WordWidgetProvider"
 
         fun updateAppWidget(

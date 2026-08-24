@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hello_flutter"
+    namespace = "com.steve.haword"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

@@ -1,4 +1,4 @@
-package com.example.hello_flutter
+package com.steve.haword
 
 import android.content.Intent
 import io.flutter.embedding.android.FlutterActivity
@@ -6,7 +6,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val channelName = "com.example.hello_flutter/widget"
+    private val channelName = "com.steve.haword/widget"
     private var pendingWidgetUri: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

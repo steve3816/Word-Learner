@@ -24,9 +24,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
     with TickerProviderStateMixin {
   final _db = DbHelper();
   List<(WordBook, int, int)> _wordBooks = [];
-  static const _widgetChannel = MethodChannel(
-    'com.example.hello_flutter/widget',
-  );
+  static const _widgetChannel = MethodChannel('com.steve.haword/widget');
 
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
