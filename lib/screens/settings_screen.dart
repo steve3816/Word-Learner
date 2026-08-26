@@ -551,32 +551,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ExpansionTile(
                 shape: const Border(),
                 collapsedShape: const Border(),
-                leading: const Icon(Icons.folder_open),
-                title: const Text(
-                  '資料管理',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                    leading: const Icon(Icons.upload_file_outlined),
-                    title: const Text('匯出全部單字書'),
-                    onTap: _exportAll,
-                  ),
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                    leading: const Icon(Icons.download_outlined),
-                    title: const Text('匯入單字書'),
-                    onTap: _import,
-                  ),
-                ],
-              ),
-            ),
-            _settingsCard(
-              ExpansionTile(
-                shape: const Border(),
-                collapsedShape: const Border(),
                 leading: const Icon(Icons.school_outlined),
                 title: const Text(
                   '複習設定',
@@ -664,6 +638,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: show,
                       onChanged: (v) => _settings.setShowCreatedAt(v),
                     ),
+                  ),
+                ],
+              ),
+            ),
+            _settingsCard(
+              ExpansionTile(
+                shape: const Border(),
+                collapsedShape: const Border(),
+                leading: const Icon(Icons.folder_open),
+                title: const Text(
+                  '資料管理',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                    leading: const Icon(Icons.upload_file_outlined),
+                    title: const Text('匯出全部單字書'),
+                    onTap: _exportAll,
+                  ),
+                  ListTile(
+                    contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                    leading: const Icon(Icons.download_outlined),
+                    title: const Text('匯入單字書'),
+                    onTap: _import,
                   ),
                 ],
               ),
