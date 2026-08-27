@@ -300,9 +300,6 @@ class _WordBookListScreenState extends State<WordBookListScreen>
         decoration: BoxDecoration(
           color: selected ? AppColors.surfaceSelected : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-          ),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF2A2530).withValues(alpha: 0.06),
@@ -311,58 +308,71 @@ class _WordBookListScreenState extends State<WordBookListScreen>
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Slidable(
-            key: Key('book_${book.id}'),
-            endActionPane: _isSelecting || book.isDefault
-                ? null
-                : ActionPane(
-                    motion: const DrawerMotion(),
-                    extentRatio: 0.2,
-                    children: [
-                      SlidableAction(
-                        onPressed: (_) => _deleteWordBook(book, count),
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        icon: Icons.delete,
-                      ),
-                    ],
-                  ),
-            child: ListTile(
-              leading: _isSelecting
-                  ? Checkbox(
-                      value: selected,
-                      onChanged: (_) => _toggleBookSelection(book.id!),
-                      activeColor: AppColors.primary,
-                    )
-                  : const Icon(Icons.menu_book_rounded),
-              title: Text(
-                book.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text('$count 個單字'),
-              trailing: _isSelecting
+        child: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              // border 是半透明色，畫在最上層時要先跟卡片底色混合成不透明色，
+              // 不然疊在滑開的紅色刪除按鈕上會被染成深紅色而不是灰色。
+              color: selected
+                  ? AppColors.primary
+                  : Color.alphaBlend(AppColors.border, AppColors.surface),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Slidable(
+              key: Key('book_${book.id}'),
+              endActionPane: _isSelecting || book.isDefault
                   ? null
-                  : (count > 0
-                        ? ListProficiencyIcon(avgProficiency, size: 24)
-                        : null),
-              onLongPress: _isSelecting
-                  ? null
-                  : () => _enterSelectMode(book.id!),
-              onTap: _isSelecting
-                  ? () => _toggleBookSelection(book.id!)
-                  : () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => WordListScreen(wordBook: book),
+                  : ActionPane(
+                      motion: const DrawerMotion(),
+                      extentRatio: 0.2,
+                      children: [
+                        SlidableAction(
+                          onPressed: (_) => _deleteWordBook(book, count),
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
                         ),
-                      );
-                      await _loadAll();
-                    },
+                      ],
+                    ),
+              child: ListTile(
+                leading: _isSelecting
+                    ? Checkbox(
+                        value: selected,
+                        onChanged: (_) => _toggleBookSelection(book.id!),
+                        activeColor: AppColors.primary,
+                      )
+                    : const Icon(Icons.menu_book_rounded),
+                title: Text(
+                  book.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text('$count 個單字'),
+                trailing: _isSelecting
+                    ? null
+                    : (count > 0
+                          ? ListProficiencyIcon(avgProficiency, size: 24)
+                          : null),
+                onLongPress: _isSelecting
+                    ? null
+                    : () => _enterSelectMode(book.id!),
+                onTap: _isSelecting
+                    ? () => _toggleBookSelection(book.id!)
+                    : () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => WordListScreen(wordBook: book),
+                          ),
+                        );
+                        await _loadAll();
+                      },
+              ),
             ),
           ),
         ),
