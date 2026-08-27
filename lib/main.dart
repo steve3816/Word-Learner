@@ -10,6 +10,7 @@ void main() async {
   WidgetService.syncWords();
   await SettingsService.loadShowProficiencyIcons();
   await SettingsService.loadShowCreatedAt();
+  await SettingsService.loadHideChinese();
   runApp(const MyApp());
   // 延後到第一幀畫完才呼叫，避免廣告 SDK 的原生初始化卡住還沒開機完成的 App。
   WidgetsBinding.instance.addPostFrameCallback((_) {

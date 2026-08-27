@@ -87,6 +87,10 @@ class _AddWordScreenState extends State<AddWordScreen> {
   final _viewScrollController = ScrollController();
   bool _showTitleWord = false;
 
+  /// 設定關閉中文顯示時，讓使用者可以在這個單字頁暫時把中文點出來看。
+  /// 只存在於這個畫面的生命週期內，離開後重進會回到隱藏狀態。
+  bool _revealChinese = false;
+
   @override
   void initState() {
     super.initState();
@@ -164,6 +168,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
       _excludeFromAiQuiz = word.excludeFromAiQuiz;
       _wordIndex = index;
       _showTitleWord = false;
+      _revealChinese = false;
       _englishCtrl.text = word.english;
       _chineseCtrl.text = word.chinese;
       _explanationCtrl.text = word.englishExplanation ?? '';
@@ -752,12 +757,38 @@ class _AddWordScreenState extends State<AddWordScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Text(
-                  word.chinese,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: AppColors.textSecondary,
-                  ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: SettingsService.hideChinese,
+                  builder: (context, hideEnabled, child) {
+                    final showChinese = !hideEnabled || _revealChinese;
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: showChinese
+                              ? Text(
+                                  word.chinese,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                        if (hideEnabled)
+                          IconButton(
+                            icon: Icon(
+                              showChinese
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                            tooltip: showChinese ? '隱藏中文' : '顯示中文',
+                            onPressed: () => setState(
+                              () => _revealChinese = !_revealChinese,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

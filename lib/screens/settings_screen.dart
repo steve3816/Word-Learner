@@ -626,7 +626,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ValueListenableBuilder<bool>(
                     valueListenable: SettingsService.showProficiencyIcons,
                     builder: (context, show, child) => SwitchListTile(
-                      title: const Text('列表熟練度'),
+                      title: const Text('列表顯示單字熟練度'),
                       value: show,
                       onChanged: (v) => _settings.setShowProficiencyIcons(v),
                     ),
@@ -634,9 +634,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ValueListenableBuilder<bool>(
                     valueListenable: SettingsService.showCreatedAt,
                     builder: (context, show, child) => SwitchListTile(
-                      title: const Text('列表單字創建時間'),
+                      title: const Text('列表顯示單字創建時間'),
                       value: show,
                       onChanged: (v) => _settings.setShowCreatedAt(v),
+                    ),
+                  ),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: SettingsService.hideChinese,
+                    builder: (context, hide, child) => SwitchListTile(
+                      title: const Text('隱藏單字中文翻譯'),
+                      value: hide,
+                      onChanged: (v) => _settings.setHideChinese(v),
                     ),
                   ),
                 ],

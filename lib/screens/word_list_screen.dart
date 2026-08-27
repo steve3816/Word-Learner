@@ -500,97 +500,117 @@ class _WordListScreenState extends State<WordListScreen> {
                                                 ),
                                               ],
                                             ),
-                                      child: ListTile(
-                                        leading: _isSelecting
-                                            ? Checkbox(
-                                                value: selected,
-                                                onChanged: (_) =>
-                                                    _toggleSelection(word.id!),
-                                                activeColor: AppColors.primary,
-                                              )
-                                            : null,
-                                        title: Text(
-                                          word.english,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                      child: ValueListenableBuilder<bool>(
+                                        valueListenable:
+                                            SettingsService.hideChinese,
+                                        builder: (context, hideChinese, child) => ListTile(
+                                          // 隱藏中文時沒有 subtitle，靠這個維持跟有 subtitle
+                                          // 時一樣的兩行高度（72 是 ListTile 兩行的預設高度），
+                                          // ListTile 在沒有 subtitle 時會把 title 垂直置中。
+                                          minTileHeight: 72,
+                                          leading: _isSelecting
+                                              ? Checkbox(
+                                                  value: selected,
+                                                  onChanged: (_) =>
+                                                      _toggleSelection(
+                                                        word.id!,
+                                                      ),
+                                                  activeColor:
+                                                      AppColors.primary,
+                                                )
+                                              : null,
+                                          title: Text(
+                                            word.english,
+                                            style: TextStyle(
+                                              fontSize: hideChinese ? 22 : 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        subtitle: Text(word.chinese),
-                                        trailing: _isSelecting
-                                            ? null
-                                            : Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  ValueListenableBuilder<bool>(
-                                                    valueListenable:
-                                                        SettingsService
-                                                            .showCreatedAt,
-                                                    builder:
-                                                        (
-                                                          context,
-                                                          show,
-                                                          child,
-                                                        ) => show
-                                                        ? Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              Text(
-                                                                _formatCreatedAt(
-                                                                  word.createdAt,
+                                          subtitle: hideChinese
+                                              ? null
+                                              : Text(word.chinese),
+                                          trailing: _isSelecting
+                                              ? null
+                                              : Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    ValueListenableBuilder<
+                                                      bool
+                                                    >(
+                                                      valueListenable:
+                                                          SettingsService
+                                                              .showCreatedAt,
+                                                      builder:
+                                                          (
+                                                            context,
+                                                            show,
+                                                            child,
+                                                          ) => show
+                                                          ? Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Text(
+                                                                  _formatCreatedAt(
+                                                                    word.createdAt,
+                                                                  ),
+                                                                  style: const TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color: Colors
+                                                                        .grey,
+                                                                  ),
                                                                 ),
-                                                                style: const TextStyle(
-                                                                  fontSize: 12,
-                                                                  color: Colors
-                                                                      .grey,
+                                                                const SizedBox(
+                                                                  width: 4,
                                                                 ),
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 4,
-                                                              ),
-                                                            ],
-                                                          )
-                                                        : const SizedBox.shrink(),
-                                                  ),
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                      Icons.volume_up_rounded,
-                                                      size: 18,
+                                                              ],
+                                                            )
+                                                          : const SizedBox.shrink(),
                                                     ),
-                                                    padding: EdgeInsets.zero,
-                                                    constraints:
-                                                        const BoxConstraints(),
-                                                    tooltip: '發音',
-                                                    onPressed: () => TtsService
-                                                        .instance
-                                                        .speak(word.english),
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  ListProficiencyIcon(
-                                                    word.proficiency,
-                                                    size: 22,
-                                                  ),
-                                                ],
-                                              ),
-                                        onLongPress: _isSelecting
-                                            ? null
-                                            : () => _enterSelectMode(word.id!),
-                                        onTap: _isSelecting
-                                            ? () => _toggleSelection(word.id!)
-                                            : () async {
-                                                await Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        AddWordScreen(
-                                                          word: word,
-                                                        ),
-                                                  ),
-                                                );
-                                                await _loadWords();
-                                              },
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.volume_up_rounded,
+                                                        size: 18,
+                                                      ),
+                                                      padding: EdgeInsets.zero,
+                                                      constraints:
+                                                          const BoxConstraints(),
+                                                      tooltip: '發音',
+                                                      onPressed: () =>
+                                                          TtsService.instance
+                                                              .speak(
+                                                                word.english,
+                                                              ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    ListProficiencyIcon(
+                                                      word.proficiency,
+                                                      size: 22,
+                                                    ),
+                                                  ],
+                                                ),
+                                          onLongPress: _isSelecting
+                                              ? null
+                                              : () =>
+                                                    _enterSelectMode(word.id!),
+                                          onTap: _isSelecting
+                                              ? () => _toggleSelection(word.id!)
+                                              : () async {
+                                                  await Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          AddWordScreen(
+                                                            word: word,
+                                                          ),
+                                                    ),
+                                                  );
+                                                  await _loadWords();
+                                                },
+                                        ),
                                       ),
                                     ),
                                   ),

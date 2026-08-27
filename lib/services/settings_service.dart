@@ -15,6 +15,7 @@ class SettingsService {
   static const _quizMaxProficiencyKey = 'quiz_max_proficiency';
   static const _showProficiencyIconsKey = 'show_proficiency_icons';
   static const _showCreatedAtKey = 'show_created_at';
+  static const _hideChineseKey = 'hide_chinese';
   static const _aiQuizEnabledKey = 'ai_quiz_enabled';
 
   /// 列表類畫面是否顯示熟練度表情圖示。app 啟動時由 [loadShowProficiencyIcons] 從
@@ -24,6 +25,10 @@ class SettingsService {
 
   /// 單字列表是否顯示單字的創建時間，運作方式跟 [showProficiencyIcons] 一樣。
   static final ValueNotifier<bool> showCreatedAt = ValueNotifier(true);
+
+  /// 單字列表和單字頁是否隱藏中文翻譯（方便背單字時先自己回想），
+  /// 運作方式跟 [showProficiencyIcons] 一樣，預設不隱藏。
+  static final ValueNotifier<bool> hideChinese = ValueNotifier(false);
 
   static Future<void> loadShowProficiencyIcons() async {
     final prefs = await SharedPreferences.getInstance();
@@ -46,6 +51,17 @@ class SettingsService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showCreatedAtKey, value);
     showCreatedAt.value = value;
+  }
+
+  static Future<void> loadHideChinese() async {
+    final prefs = await SharedPreferences.getInstance();
+    hideChinese.value = prefs.getBool(_hideChineseKey) ?? false;
+  }
+
+  Future<void> setHideChinese(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hideChineseKey, value);
+    hideChinese.value = value;
   }
 
   static const promptFields = [
