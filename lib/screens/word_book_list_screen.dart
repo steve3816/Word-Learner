@@ -324,6 +324,7 @@ class _WordBookListScreenState extends State<WordBookListScreen>
             borderRadius: BorderRadius.circular(12),
             child: Slidable(
               key: Key('book_${book.id}'),
+              groupTag: 'book_list',
               endActionPane: _isSelecting || book.isDefault
                   ? null
                   : ActionPane(
@@ -591,22 +592,24 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                               // ── 單字書列表 ──
                               _isSelecting
                                   ? _buildReorderableBookList()
-                                  : ListView.builder(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
+                                  : SlidableAutoCloseBehavior(
+                                      child: ListView.builder(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        itemCount: _wordBooks.isEmpty
+                                            ? 1
+                                            : _wordBooks.length,
+                                        itemBuilder: (context, index) {
+                                          if (_wordBooks.isEmpty) {
+                                            return const Center(
+                                              child: Text('還沒有單字書，點 + 新增吧！'),
+                                            );
+                                          }
+                                          return _bookTile(_wordBooks[index]);
+                                        },
                                       ),
-                                      itemCount: _wordBooks.isEmpty
-                                          ? 1
-                                          : _wordBooks.length,
-                                      itemBuilder: (context, index) {
-                                        if (_wordBooks.isEmpty) {
-                                          return const Center(
-                                            child: Text('還沒有單字書，點 + 新增吧！'),
-                                          );
-                                        }
-                                        return _bookTile(_wordBooks[index]);
-                                      },
                                     ),
                               // ── 最近新增 ──
                               _wordCrossListView(
