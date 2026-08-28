@@ -508,6 +508,12 @@ class _WordListScreenState extends State<WordListScreen> {
                                           // 時一樣的兩行高度（72 是 ListTile 兩行的預設高度），
                                           // ListTile 在沒有 subtitle 時會把 title 垂直置中。
                                           minTileHeight: 72,
+                                          // 明確指定，讓尾端內容不管顯示幾個項目，
+                                          // 跟卡片右邊界永遠保持固定距離。
+                                          contentPadding: const EdgeInsets.only(
+                                            left: 16,
+                                            right: 16,
+                                          ),
                                           leading: _isSelecting
                                               ? Checkbox(
                                                   value: selected,
@@ -531,66 +537,85 @@ class _WordListScreenState extends State<WordListScreen> {
                                               : Text(word.chinese),
                                           trailing: _isSelecting
                                               ? null
-                                              : Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    ValueListenableBuilder<
-                                                      bool
-                                                    >(
-                                                      valueListenable:
-                                                          SettingsService
-                                                              .showCreatedAt,
-                                                      builder:
-                                                          (
-                                                            context,
-                                                            show,
-                                                            child,
-                                                          ) => show
-                                                          ? Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                Text(
-                                                                  _formatCreatedAt(
-                                                                    word.createdAt,
-                                                                  ),
-                                                                  style: const TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    color: Colors
-                                                                        .grey,
-                                                                  ),
+                                              : ValueListenableBuilder<bool>(
+                                                  valueListenable:
+                                                      SettingsService
+                                                          .showCreatedAt,
+                                                  builder: (context, showCreatedAt, _) => ValueListenableBuilder<bool>(
+                                                    valueListenable:
+                                                        SettingsService
+                                                            .showProficiencyIcons,
+                                                    builder: (context, showProficiency, _) {
+                                                      // 依序放進「有開啟」的項目，間距只插在項目「之間」，
+                                                      // 這樣不管中間關掉哪個設定，最右邊到卡片邊界的距離
+                                                      // 都維持固定，不會忽近忽遠。
+                                                      final items = <Widget>[
+                                                        if (showCreatedAt)
+                                                          Text(
+                                                            _formatCreatedAt(
+                                                              word.createdAt,
+                                                            ),
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontSize: 12,
+                                                                  color: Colors
+                                                                      .grey,
                                                                 ),
-                                                                const SizedBox(
-                                                                  width: 4,
+                                                          ),
+                                                        SizedBox(
+                                                          width: 32,
+                                                          height: 32,
+                                                          child: Center(
+                                                            child: Tooltip(
+                                                              message: '發音',
+                                                              child: InkResponse(
+                                                                radius: 16,
+                                                                onTap: () =>
+                                                                    TtsService
+                                                                        .instance
+                                                                        .speak(
+                                                                          word.english,
+                                                                        ),
+                                                                child: const Icon(
+                                                                  Icons
+                                                                      .volume_up_rounded,
+                                                                  size: 18,
                                                                 ),
-                                                              ],
-                                                            )
-                                                          : const SizedBox.shrink(),
-                                                    ),
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                        Icons.volume_up_rounded,
-                                                        size: 18,
-                                                      ),
-                                                      padding: EdgeInsets.zero,
-                                                      constraints:
-                                                          const BoxConstraints(),
-                                                      tooltip: '發音',
-                                                      onPressed: () =>
-                                                          TtsService.instance
-                                                              .speak(
-                                                                word.english,
                                                               ),
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    ListProficiencyIcon(
-                                                      word.proficiency,
-                                                      size: 22,
-                                                    ),
-                                                  ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        if (showProficiency)
+                                                          SizedBox(
+                                                            width: 32,
+                                                            height: 32,
+                                                            child: Center(
+                                                              child: ListProficiencyIcon(
+                                                                word.proficiency,
+                                                                size: 22,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                      ];
+                                                      return Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          for (
+                                                            var i = 0;
+                                                            i < items.length;
+                                                            i++
+                                                          ) ...[
+                                                            if (i > 0)
+                                                              const SizedBox(
+                                                                width: 4,
+                                                              ),
+                                                            items[i],
+                                                          ],
+                                                        ],
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                           onLongPress: _isSelecting
                                               ? null
