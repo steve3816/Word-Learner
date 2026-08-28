@@ -562,6 +562,17 @@ class _WordListScreenState extends State<WordListScreen> {
                                                                       .grey,
                                                                 ),
                                                           ),
+                                                        if (showProficiency)
+                                                          SizedBox(
+                                                            width: 32,
+                                                            height: 32,
+                                                            child: Center(
+                                                              child: ListProficiencyIcon(
+                                                                word.proficiency,
+                                                                size: 22,
+                                                              ),
+                                                            ),
+                                                          ),
                                                         SizedBox(
                                                           width: 32,
                                                           height: 32,
@@ -585,17 +596,6 @@ class _WordListScreenState extends State<WordListScreen> {
                                                             ),
                                                           ),
                                                         ),
-                                                        if (showProficiency)
-                                                          SizedBox(
-                                                            width: 32,
-                                                            height: 32,
-                                                            child: Center(
-                                                              child: ListProficiencyIcon(
-                                                                word.proficiency,
-                                                                size: 22,
-                                                              ),
-                                                            ),
-                                                          ),
                                                       ];
                                                       return Row(
                                                         mainAxisSize:
