@@ -13,7 +13,7 @@ import '../services/settings_service.dart';
 import '../services/tts_service.dart';
 import '../utils/list_util.dart';
 import '../utils/proficiency_util.dart';
-import '../widgets/banner_ad_widget.dart';
+import '../widgets/shared/banner_ad_widget.dart';
 
 enum _QuizType { enToCn, cnToEn, fillInBlank, enDefinition, aiFillInBlank }
 

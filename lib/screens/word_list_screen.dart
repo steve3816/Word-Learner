@@ -7,10 +7,8 @@ import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
 import '../services/export_service.dart';
-import '../services/settings_service.dart';
-import '../services/tts_service.dart';
 import '../services/widget_service.dart';
-import '../widgets/list_proficiency_icon.dart';
+import '../widgets/word_list_screen/word_list_tile.dart';
 import 'add_word_screen.dart';
 import 'quiz_screen.dart';
 
@@ -194,20 +192,6 @@ class _WordListScreenState extends State<WordListScreen> {
     await _loadWords();
     if (mounted)
       showSuccessSnackBar(context, '已移動 $count 個單字到「${target.name}」');
-  }
-
-  String _formatCreatedAt(DateTime createdAt) {
-    final now = DateTime.now();
-    final diff = now.difference(createdAt);
-    if (diff.inHours < 24) {
-      return '${diff.inHours == 0 ? 1 : diff.inHours}小時內';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays}天內';
-    } else if (diff.inDays < 14) {
-      return '1禮拜';
-    } else {
-      return '${createdAt.year}/${createdAt.month.toString().padLeft(2, '0')}/${createdAt.day.toString().padLeft(2, '0')}';
-    }
   }
 
   Future<void> _exportWordBook() async {
@@ -442,204 +426,22 @@ class _WordListScreenState extends State<WordListScreen> {
                     itemBuilder: (context, index) {
                       final word = _words[index];
                       final selected = _selectedIds.contains(word.id);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? AppColors.surfaceSelected
-                                : AppColors.surface,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF2A2530,
-                                ).withValues(alpha: 0.06),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: DecoratedBox(
-                            position: DecorationPosition.foreground,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                // border 是半透明色，畫在最上層時要先跟卡片底色混合成
-                                // 不透明色，不然疊在滑開的紅色刪除按鈕上會被染成深紅色。
-                                color: selected
-                                    ? AppColors.primary
-                                    : Color.alphaBlend(
-                                        AppColors.border,
-                                        AppColors.surface,
-                                      ),
-                              ),
+                      return WordListTile(
+                        word: word,
+                        selected: selected,
+                        isSelecting: _isSelecting,
+                        onToggleSelect: () => _toggleSelection(word.id!),
+                        onEnterSelectMode: () => _enterSelectMode(word.id!),
+                        onDelete: () => _deleteWord(word.id!),
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AddWordScreen(word: word),
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: Row(
-                                children: [
-                                  Container(width: 3, color: AppColors.primary),
-                                  Expanded(
-                                    child: Slidable(
-                                      key: Key('word_${word.id}'),
-                                      groupTag: 'word_list',
-                                      endActionPane: _isSelecting
-                                          ? null
-                                          : ActionPane(
-                                              motion: const DrawerMotion(),
-                                              extentRatio: 0.2,
-                                              children: [
-                                                SlidableAction(
-                                                  onPressed: (_) =>
-                                                      _deleteWord(word.id!),
-                                                  backgroundColor: Colors.red,
-                                                  foregroundColor: Colors.white,
-                                                  icon: Icons.delete,
-                                                ),
-                                              ],
-                                            ),
-                                      child: ValueListenableBuilder<bool>(
-                                        valueListenable:
-                                            SettingsService.hideChinese,
-                                        builder: (context, hideChinese, child) => ListTile(
-                                          // 隱藏中文時沒有 subtitle，靠這個維持跟有 subtitle
-                                          // 時一樣的兩行高度（72 是 ListTile 兩行的預設高度），
-                                          // ListTile 在沒有 subtitle 時會把 title 垂直置中。
-                                          minTileHeight: 72,
-                                          // 明確指定，讓尾端內容不管顯示幾個項目，
-                                          // 跟卡片右邊界永遠保持固定距離。
-                                          contentPadding: const EdgeInsets.only(
-                                            left: 16,
-                                            right: 16,
-                                          ),
-                                          leading: _isSelecting
-                                              ? Checkbox(
-                                                  value: selected,
-                                                  onChanged: (_) =>
-                                                      _toggleSelection(
-                                                        word.id!,
-                                                      ),
-                                                  activeColor:
-                                                      AppColors.primary,
-                                                )
-                                              : null,
-                                          title: Text(
-                                            word.english,
-                                            style: TextStyle(
-                                              fontSize: hideChinese ? 22 : 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          subtitle: hideChinese
-                                              ? null
-                                              : Text(word.chinese),
-                                          trailing: _isSelecting
-                                              ? null
-                                              : ValueListenableBuilder<bool>(
-                                                  valueListenable:
-                                                      SettingsService
-                                                          .showCreatedAt,
-                                                  builder: (context, showCreatedAt, _) => ValueListenableBuilder<bool>(
-                                                    valueListenable:
-                                                        SettingsService
-                                                            .showProficiencyIcons,
-                                                    builder: (context, showProficiency, _) {
-                                                      // 依序放進「有開啟」的項目，間距只插在項目「之間」，
-                                                      // 這樣不管中間關掉哪個設定，最右邊到卡片邊界的距離
-                                                      // 都維持固定，不會忽近忽遠。
-                                                      final items = <Widget>[
-                                                        if (showCreatedAt)
-                                                          Text(
-                                                            _formatCreatedAt(
-                                                              word.createdAt,
-                                                            ),
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 12,
-                                                                  color: Colors
-                                                                      .grey,
-                                                                ),
-                                                          ),
-                                                        if (showProficiency)
-                                                          SizedBox(
-                                                            width: 32,
-                                                            height: 32,
-                                                            child: Center(
-                                                              child: ListProficiencyIcon(
-                                                                word.proficiency,
-                                                                size: 22,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        SizedBox(
-                                                          width: 32,
-                                                          height: 32,
-                                                          child: Center(
-                                                            child: InkResponse(
-                                                              radius: 16,
-                                                              onTap: () =>
-                                                                  TtsService
-                                                                      .instance
-                                                                      .speak(
-                                                                        word.english,
-                                                                      ),
-                                                              child: const Icon(
-                                                                Icons
-                                                                    .volume_up_rounded,
-                                                                size: 18,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ];
-                                                      return Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          for (
-                                                            var i = 0;
-                                                            i < items.length;
-                                                            i++
-                                                          ) ...[
-                                                            if (i > 0)
-                                                              const SizedBox(
-                                                                width: 4,
-                                                              ),
-                                                            items[i],
-                                                          ],
-                                                        ],
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                          onLongPress: _isSelecting
-                                              ? null
-                                              : () =>
-                                                    _enterSelectMode(word.id!),
-                                          onTap: _isSelecting
-                                              ? () => _toggleSelection(word.id!)
-                                              : () async {
-                                                  await Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (_) =>
-                                                          AddWordScreen(
-                                                            word: word,
-                                                          ),
-                                                    ),
-                                                  );
-                                                  await _loadWords();
-                                                },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                          );
+                          await _loadWords();
+                        },
                       );
                     },
                   ),

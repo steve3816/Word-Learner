@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/ad_service.dart';
+import '../../services/ad_service.dart';
 
 class BannerAdWidget extends StatefulWidget {
   const BannerAdWidget({super.key});
@@ -34,8 +34,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     final adFreeUntil = await AdService.adFreeUntil();
     if (adFreeUntil != null) {
       // 無廣告期間還沒到期，改成排一個到期時就自動重新載入的計時器，而不是就此放著不管。
-      _adFreeExpiryTimer =
-          Timer(adFreeUntil.difference(DateTime.now()), _load);
+      _adFreeExpiryTimer = Timer(adFreeUntil.difference(DateTime.now()), _load);
       return;
     }
     await AdService.ensureInitialized();
