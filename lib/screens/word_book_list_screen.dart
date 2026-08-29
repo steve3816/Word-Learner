@@ -505,7 +505,6 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.search),
-                    tooltip: '搜尋單字',
                     onPressed: () {
                       setState(() => _showSearch = true);
                       _searchFocus.requestFocus();
@@ -514,7 +513,6 @@ class _WordBookListScreenState extends State<WordBookListScreen>
                   if (totalWordCount >= 3)
                     IconButton(
                       icon: const Icon(Icons.history_edu),
-                      tooltip: '複習全部單字',
                       onPressed: () async {
                         await Navigator.push(
                           context,

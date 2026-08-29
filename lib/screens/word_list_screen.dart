@@ -374,7 +374,6 @@ class _WordListScreenState extends State<WordListScreen> {
                   if (_words.isNotEmpty)
                     IconButton(
                       icon: const Icon(Icons.history_edu),
-                      tooltip: '複習此單字書',
                       onPressed: () async {
                         await Navigator.push(
                           context,
@@ -577,21 +576,18 @@ class _WordListScreenState extends State<WordListScreen> {
                                                           width: 32,
                                                           height: 32,
                                                           child: Center(
-                                                            child: Tooltip(
-                                                              message: '發音',
-                                                              child: InkResponse(
-                                                                radius: 16,
-                                                                onTap: () =>
-                                                                    TtsService
-                                                                        .instance
-                                                                        .speak(
-                                                                          word.english,
-                                                                        ),
-                                                                child: const Icon(
-                                                                  Icons
-                                                                      .volume_up_rounded,
-                                                                  size: 18,
-                                                                ),
+                                                            child: InkResponse(
+                                                              radius: 16,
+                                                              onTap: () =>
+                                                                  TtsService
+                                                                      .instance
+                                                                      .speak(
+                                                                        word.english,
+                                                                      ),
+                                                              child: const Icon(
+                                                                Icons
+                                                                    .volume_up_rounded,
+                                                                size: 18,
                                                               ),
                                                             ),
                                                           ),

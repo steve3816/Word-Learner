@@ -338,7 +338,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
-            tooltip: '使用說明',
             onPressed: () => showDialog(
               context: context,
               builder: (ctx) => AlertDialog(

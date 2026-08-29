@@ -781,7 +781,6 @@ class _AddWordScreenState extends State<AddWordScreen> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                             ),
-                            tooltip: showChinese ? '隱藏中文' : '顯示中文',
                             onPressed: () => setState(
                               () => _revealChinese = !_revealChinese,
                             ),
@@ -1027,7 +1026,6 @@ class _AddWordScreenState extends State<AddWordScreen> {
                 ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                tooltip: '刪除',
                 onPressed: () => _removeExample(index),
               ),
             ],
@@ -1572,7 +1570,6 @@ class _AddWordScreenState extends State<AddWordScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: '編輯',
             onPressed: () => setState(() => _isEditing = true),
           ),
         ],
