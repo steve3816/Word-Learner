@@ -5,6 +5,7 @@ import '../app_theme.dart';
 import '../database/db_helper.dart';
 import '../models/word.dart';
 import '../models/word_book.dart';
+import '../services/settings_service.dart';
 import '../services/widget_service.dart';
 import '../widgets/shared/banner_ad_widget.dart';
 import '../widgets/shared/list_proficiency_icon.dart';
@@ -421,13 +422,28 @@ class _WordBookListScreenState extends State<WordBookListScreen>
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 2,
       shadowColor: Colors.black26,
-      child: ListTile(
-        title: Text(
-          word.english,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: SettingsService.hideChinese,
+        builder: (context, hideChinese, child) => ListTile(
+          minTileHeight: 72,
+          title: Text(
+            word.english,
+            style: TextStyle(
+              fontSize: hideChinese ? 22 : 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: hideChinese ? null : Text(word.chinese),
+          trailing: child,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
+            );
+            await _loadAll();
+          },
         ),
-        subtitle: Text(word.chinese),
-        trailing: Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
@@ -444,13 +460,6 @@ class _WordBookListScreenState extends State<WordBookListScreen>
             ListProficiencyIcon(word.proficiency, size: 22),
           ],
         ),
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
-          );
-          await _loadAll();
-        },
       ),
     );
   }
