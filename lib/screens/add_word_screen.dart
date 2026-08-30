@@ -1405,7 +1405,7 @@ class _AddWordScreenState extends State<AddWordScreen> {
                                 ),
                                 ListTile(
                                   dense: true,
-                                  title: const Text('不納入 AI 出題'),
+                                  title: const Text('不使用 AI 出題'),
                                   trailing: Checkbox(
                                     value: _excludeFromAiQuiz,
                                     onChanged: (v) => setState(
