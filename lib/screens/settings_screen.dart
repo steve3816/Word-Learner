@@ -120,6 +120,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
   );
 
+  Widget get _infoButton => IconButton(
+    icon: const Icon(Icons.info_outline),
+    onPressed: () => showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('使用說明'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _InfoItem(
+              icon: Icons.auto_fix_high,
+              text: 'AI填寫功能需填入對應服務的 API Key 才會啟用，未填入時相關按鈕不會出現。',
+            ),
+            const SizedBox(height: 12),
+            _InfoItem(
+              icon: Icons.key_outlined,
+              text:
+                  'API Key 是 AI 服務商核發給您的個人授權碼，用來驗證身分與計算用量，通常需先至該服務官方網站申請及付費才能取得。',
+            ),
+            const SizedBox(height: 12),
+            _InfoItem(
+              icon: Icons.storage_outlined,
+              text: '單字資料儲存於本機裝置，刪除 App 時將一併刪除，建議定期使用「匯出」功能備份。',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('了解'),
+          ),
+        ],
+      ),
+    ),
+  );
+
   Future<void> _loadSettings() async {
     final provider = await _settings.getSelectedProvider();
     for (final p in AiProvider.values) {
@@ -333,47 +370,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     return Scaffold(
       extendBody: true,
-      appBar: AppBar(
-        title: const Text('設定'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('使用說明'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _InfoItem(
-                      icon: Icons.auto_fix_high,
-                      text: 'AI填寫功能需填入對應服務的 API Key 才會啟用，未填入時相關按鈕不會出現。',
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoItem(
-                      icon: Icons.key_outlined,
-                      text:
-                          'API Key 是 AI 服務商核發給您的個人授權碼，用來驗證身分與計算用量，通常需先至該服務官方網站申請及付費才能取得。',
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoItem(
-                      icon: Icons.storage_outlined,
-                      text: '單字資料儲存於本機裝置，刪除 App 時將一併刪除，建議定期使用「匯出」功能備份。',
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('了解'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('設定'), actions: [_infoButton]),
       body: DotGridBackground(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
