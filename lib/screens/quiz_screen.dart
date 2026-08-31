@@ -15,39 +15,6 @@ import '../utils/list_util.dart';
 import '../utils/proficiency_util.dart';
 import '../widgets/shared/banner_ad_widget.dart';
 
-enum _QuizType { enToCn, cnToEn, fillInBlank, enDefinition, aiFillInBlank }
-
-class _Question {
-  final Word word;
-  final _QuizType type;
-  final String prompt;
-  final String answer;
-
-  const _Question({
-    required this.word,
-    required this.type,
-    required this.prompt,
-    required this.answer,
-  });
-}
-
-class _QuizResult {
-  final _Question question;
-  final bool isCorrect;
-  final int oldProficiency;
-  final int newProficiency;
-  final String userAnswer;
-
-  const _QuizResult({
-    required this.question,
-    required this.isCorrect,
-    required this.oldProficiency,
-    required this.newProficiency,
-    required this.userAnswer,
-  });
-
-  int get delta => newProficiency - oldProficiency;
-}
 
 class QuizScreen extends StatefulWidget {
   final int? wordBookId;
@@ -740,4 +707,37 @@ class _QuizInfoItem extends StatelessWidget {
       ],
     );
   }
+}
+
+enum _QuizType { enToCn, cnToEn, fillInBlank, enDefinition, aiFillInBlank }
+class _Question {
+  final Word word;
+  final _QuizType type;
+  final String prompt;
+  final String answer;
+
+  const _Question({
+    required this.word,
+    required this.type,
+    required this.prompt,
+    required this.answer,
+  });
+}
+
+class _QuizResult {
+  final _Question question;
+  final bool isCorrect;
+  final int oldProficiency;
+  final int newProficiency;
+  final String userAnswer;
+
+  const _QuizResult({
+    required this.question,
+    required this.isCorrect,
+    required this.oldProficiency,
+    required this.newProficiency,
+    required this.userAnswer,
+  });
+
+  int get delta => newProficiency - oldProficiency;
 }
