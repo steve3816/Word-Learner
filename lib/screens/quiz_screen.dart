@@ -15,7 +15,6 @@ import '../utils/list_util.dart';
 import '../utils/proficiency_util.dart';
 import '../widgets/shared/banner_ad_widget.dart';
 
-
 class QuizScreen extends StatefulWidget {
   final int? wordBookId;
 
@@ -60,255 +59,6 @@ class _QuizScreenState extends State<QuizScreen> {
     _answerFocus.dispose();
     _confettiController.dispose();
     super.dispose();
-  }
-
-  /// 廣告顯示在複習「開始」的那一刻（而不是結束離開時）：進入這個畫面只有一個入口，
-  /// 不像離開有返回鍵、手勢等多種路徑都要攔截，天然不會有廣告被繞過的問題。
-  ///
-  /// 只有輪到該播的那一次才即時去載入廣告並等待——不常駐預載，因為這件事本來就
-  /// 只偶爾發生一次，使用者等一下廣告載入是可以接受的；載入失敗（含沒網路）就
-  /// 直接放棄，不擋使用者進複習。
-  Future<void> _maybeShowInterstitialOnStart() async {
-    final due = await AdService.recordQuizStart();
-    if (!due || await AdService.isAdFree()) return;
-    if (mounted) setState(() => _awaitingAd = true);
-    await AdService.ensureInitialized();
-
-    final completer = Completer<void>();
-    InterstitialAd.load(
-      adUnitId: AdService.interstitialAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              if (!completer.isCompleted) completer.complete();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              if (!completer.isCompleted) completer.complete();
-            },
-          );
-          ad.show();
-        },
-        onAdFailedToLoad: (_) {
-          if (!completer.isCompleted) completer.complete();
-        },
-      ),
-    );
-    await completer.future;
-  }
-
-  Future<void> _init() async {
-    final all = widget.wordBookId != null
-        ? await _db.getWordsByWordBook(widget.wordBookId!)
-        : await _db.getAllWords();
-    final maxProficiency = await _settings.getQuizMaxProficiency();
-    final words = all
-        .where((w) => w.proficiency <= maxProficiency && !w.excludeFromQuiz)
-        .toList();
-
-    if (await _settings.getAiQuizEnabled()) {
-      _aiService = await _settings.getActiveService();
-      if (_aiService != null) {
-        _aiQuizPromptTemplate = await _settings.getPrompt('aiQuiz');
-      }
-    }
-
-    final questions = await _generateQuestions(words);
-
-    await _maybeShowInterstitialOnStart();
-
-    if (!mounted) return;
-    setState(() {
-      _questions = questions;
-      _loading = false;
-      _awaitingAd = false;
-    });
-  }
-
-  Future<List<_Question>> _generateQuestions(List<Word> words) async {
-    final selected = (List<Word>.from(words)..shuffle(_random)).take(10);
-    final aiAvailable = _aiService != null && _aiQuizPromptTemplate != null;
-    final questions = <_Question>[];
-
-    for (final word in selected) {
-      final hasBlankableExample = word.examples.any(
-        (ex) => ex.sentence.toLowerCase().contains(word.english.toLowerCase()),
-      );
-      final availableTypes = [
-        _QuizType.enToCn,
-        _QuizType.cnToEn,
-        if (hasBlankableExample) _QuizType.fillInBlank,
-        if (word.englishExplanation != null) _QuizType.enDefinition,
-        if (aiAvailable && !word.excludeFromAiQuiz) _QuizType.aiFillInBlank,
-      ];
-
-      var type = ListUtil.getRandomElement(availableTypes, _random);
-
-      if (type == _QuizType.aiFillInBlank) {
-        final aiSentence = await _tryGenerateAiQuizSentence(word);
-        if (aiSentence != null) {
-          questions.add(_buildQuestion(word, type, aiSentence: aiSentence));
-          continue;
-        }
-        // API 失敗，或句子沒包含這個單字：放棄這次 AI 出題，從候選題型移除後重抽。
-        availableTypes.remove(_QuizType.aiFillInBlank);
-        type = ListUtil.getRandomElement(availableTypes, _random);
-      }
-
-      questions.add(_buildQuestion(word, type));
-    }
-
-    return questions;
-  }
-
-  /// 準備 AI 出題用的例句，失敗（含沒網路）或句子沒包含目標單字都回傳 null，
-  /// 由呼叫端改用其他題型，不會讓整場複習失敗。
-  Future<ExampleSentence?> _tryGenerateAiQuizSentence(Word word) async {
-    try {
-      final prompt =
-          _aiQuizPromptTemplate!.replaceAll(
-            SettingsService.wordPlaceholder,
-            word.english,
-          ) +
-          ExampleSentence.jsonFormatSuffix;
-      final raw = await _aiService!.complete(prompt);
-      final result = ExampleSentence.parseJson(raw);
-      if (!result.sentence.toLowerCase().contains(word.english.toLowerCase())) {
-        return null;
-      }
-      return result;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String _blankedPrompt(Word word, ExampleSentence ex) {
-    final blanked = ex.sentence.replaceAll(
-      RegExp(RegExp.escape(word.english), caseSensitive: false),
-      '___',
-    );
-    return ex.chineseTranslation != null
-        ? '${ex.chineseTranslation}\n\n$blanked'
-        : blanked;
-  }
-
-  _Question _buildQuestion(
-    Word word,
-    _QuizType type, {
-    ExampleSentence? aiSentence,
-  }) {
-    switch (type) {
-      case _QuizType.enToCn:
-        return _Question(
-          word: word,
-          type: type,
-          prompt: word.english,
-          answer: word.chinese,
-        );
-      case _QuizType.cnToEn:
-        return _Question(
-          word: word,
-          type: type,
-          prompt: word.chinese,
-          answer: word.english,
-        );
-      case _QuizType.enDefinition:
-        return _Question(
-          word: word,
-          type: type,
-          prompt: word.englishExplanation!,
-          answer: word.english,
-        );
-      case _QuizType.fillInBlank:
-        final blankable = word.examples
-            .where(
-              (ex) => ex.sentence.toLowerCase().contains(
-                word.english.toLowerCase(),
-              ),
-            )
-            .toList();
-        final ex = ListUtil.getRandomElement(blankable, _random);
-        return _Question(
-          word: word,
-          type: type,
-          prompt: _blankedPrompt(word, ex),
-          answer: word.english,
-        );
-      case _QuizType.aiFillInBlank:
-        return _Question(
-          word: word,
-          type: type,
-          prompt: _blankedPrompt(word, aiSentence!),
-          answer: word.english,
-        );
-    }
-  }
-
-  void _submit() {
-    final word = _questions[_current].word;
-    final userInput = _answerCtrl.text.trim().toLowerCase();
-    final acceptedAnswers = _questions[_current].answer
-        .split(RegExp(r'[；;，,]'))
-        .map((s) => s.trim().toLowerCase())
-        .where((s) => s.isNotEmpty);
-    final correct =
-        acceptedAnswers.any((a) => a == userInput) ||
-        userInput == _questions[_current].answer.trim().toLowerCase();
-    final newProficiency = (word.proficiency + (correct ? 10 : -10)).clamp(
-      ProficiencyLevel.veryUnfamiliar.score,
-      ProficiencyLevel.proficient.score,
-    );
-    setState(() {
-      _answered = true;
-      _isCorrect = correct;
-      if (correct) _correct++;
-      _results.add(
-        _QuizResult(
-          question: _questions[_current],
-          isCorrect: correct,
-          oldProficiency: word.proficiency,
-          newProficiency: newProficiency,
-          userAnswer: _answerCtrl.text.trim(),
-        ),
-      );
-    });
-  }
-
-  void _next() {
-    _answerFocus.unfocus();
-    if (_current + 1 >= _questions.length) {
-      for (final r in _results) {
-        _db.updateWord(r.question.word.copyWith(proficiency: r.newProficiency));
-      }
-      setState(() => _current = _questions.length);
-      if (_correct / _questions.length >= 0.8) {
-        _confettiController.play();
-      }
-    } else {
-      setState(() {
-        _current++;
-        _answered = false;
-        _isCorrect = false;
-        _answerCtrl.clear();
-      });
-    }
-  }
-
-  String _questionLabel(_QuizType type) {
-    switch (type) {
-      case _QuizType.enToCn:
-        return '請輸入中文意思：';
-      case _QuizType.cnToEn:
-        return '請根據翻譯輸入英文單字：';
-      case _QuizType.enDefinition:
-        return '根據英文解釋，填入對應的英文單字：';
-      case _QuizType.fillInBlank:
-      case _QuizType.aiFillInBlank:
-        return '請填入缺少的英文單字：';
-    }
   }
 
   @override
@@ -657,6 +407,255 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
   }
+
+  String _questionLabel(_QuizType type) {
+    switch (type) {
+      case _QuizType.enToCn:
+        return '請輸入中文意思：';
+      case _QuizType.cnToEn:
+        return '請根據翻譯輸入英文單字：';
+      case _QuizType.enDefinition:
+        return '根據英文解釋，填入對應的英文單字：';
+      case _QuizType.fillInBlank:
+      case _QuizType.aiFillInBlank:
+        return '請填入缺少的英文單字：';
+    }
+  }
+
+  /// 廣告顯示在複習「開始」的那一刻（而不是結束離開時）：進入這個畫面只有一個入口，
+  /// 不像離開有返回鍵、手勢等多種路徑都要攔截，天然不會有廣告被繞過的問題。
+  ///
+  /// 只有輪到該播的那一次才即時去載入廣告並等待——不常駐預載，因為這件事本來就
+  /// 只偶爾發生一次，使用者等一下廣告載入是可以接受的；載入失敗（含沒網路）就
+  /// 直接放棄，不擋使用者進複習。
+  Future<void> _maybeShowInterstitialOnStart() async {
+    final due = await AdService.recordQuizStart();
+    if (!due || await AdService.isAdFree()) return;
+    if (mounted) setState(() => _awaitingAd = true);
+    await AdService.ensureInitialized();
+
+    final completer = Completer<void>();
+    InterstitialAd.load(
+      adUnitId: AdService.interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              if (!completer.isCompleted) completer.complete();
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              if (!completer.isCompleted) completer.complete();
+            },
+          );
+          ad.show();
+        },
+        onAdFailedToLoad: (_) {
+          if (!completer.isCompleted) completer.complete();
+        },
+      ),
+    );
+    await completer.future;
+  }
+
+  Future<void> _init() async {
+    final all = widget.wordBookId != null
+        ? await _db.getWordsByWordBook(widget.wordBookId!)
+        : await _db.getAllWords();
+    final maxProficiency = await _settings.getQuizMaxProficiency();
+    final words = all
+        .where((w) => w.proficiency <= maxProficiency && !w.excludeFromQuiz)
+        .toList();
+
+    if (await _settings.getAiQuizEnabled()) {
+      _aiService = await _settings.getActiveService();
+      if (_aiService != null) {
+        _aiQuizPromptTemplate = await _settings.getPrompt('aiQuiz');
+      }
+    }
+
+    final questions = await _generateQuestions(words);
+
+    await _maybeShowInterstitialOnStart();
+
+    if (!mounted) return;
+    setState(() {
+      _questions = questions;
+      _loading = false;
+      _awaitingAd = false;
+    });
+  }
+
+  Future<List<_Question>> _generateQuestions(List<Word> words) async {
+    final selected = (List<Word>.from(words)..shuffle(_random)).take(10);
+    final aiAvailable = _aiService != null && _aiQuizPromptTemplate != null;
+    final questions = <_Question>[];
+
+    for (final word in selected) {
+      final hasBlankableExample = word.examples.any(
+        (ex) => ex.sentence.toLowerCase().contains(word.english.toLowerCase()),
+      );
+      final availableTypes = [
+        _QuizType.enToCn,
+        _QuizType.cnToEn,
+        if (hasBlankableExample) _QuizType.fillInBlank,
+        if (word.englishExplanation != null) _QuizType.enDefinition,
+        if (aiAvailable && !word.excludeFromAiQuiz) _QuizType.aiFillInBlank,
+      ];
+
+      var type = ListUtil.getRandomElement(availableTypes, _random);
+
+      if (type == _QuizType.aiFillInBlank) {
+        final aiSentence = await _tryGenerateAiQuizSentence(word);
+        if (aiSentence != null) {
+          questions.add(_buildQuestion(word, type, aiSentence: aiSentence));
+          continue;
+        }
+        // API 失敗，或句子沒包含這個單字：放棄這次 AI 出題，從候選題型移除後重抽。
+        availableTypes.remove(_QuizType.aiFillInBlank);
+        type = ListUtil.getRandomElement(availableTypes, _random);
+      }
+
+      questions.add(_buildQuestion(word, type));
+    }
+
+    return questions;
+  }
+
+  /// 準備 AI 出題用的例句，失敗（含沒網路）或句子沒包含目標單字都回傳 null，
+  /// 由呼叫端改用其他題型，不會讓整場複習失敗。
+  Future<ExampleSentence?> _tryGenerateAiQuizSentence(Word word) async {
+    try {
+      final prompt =
+          _aiQuizPromptTemplate!.replaceAll(
+            SettingsService.wordPlaceholder,
+            word.english,
+          ) +
+          ExampleSentence.jsonFormatSuffix;
+      final raw = await _aiService!.complete(prompt);
+      final result = ExampleSentence.parseJson(raw);
+      if (!result.sentence.toLowerCase().contains(word.english.toLowerCase())) {
+        return null;
+      }
+      return result;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _blankedPrompt(Word word, ExampleSentence ex) {
+    final blanked = ex.sentence.replaceAll(
+      RegExp(RegExp.escape(word.english), caseSensitive: false),
+      '___',
+    );
+    return ex.chineseTranslation != null
+        ? '${ex.chineseTranslation}\n\n$blanked'
+        : blanked;
+  }
+
+  _Question _buildQuestion(
+    Word word,
+    _QuizType type, {
+    ExampleSentence? aiSentence,
+  }) {
+    switch (type) {
+      case _QuizType.enToCn:
+        return _Question(
+          word: word,
+          type: type,
+          prompt: word.english,
+          answer: word.chinese,
+        );
+      case _QuizType.cnToEn:
+        return _Question(
+          word: word,
+          type: type,
+          prompt: word.chinese,
+          answer: word.english,
+        );
+      case _QuizType.enDefinition:
+        return _Question(
+          word: word,
+          type: type,
+          prompt: word.englishExplanation!,
+          answer: word.english,
+        );
+      case _QuizType.fillInBlank:
+        final blankable = word.examples
+            .where(
+              (ex) => ex.sentence.toLowerCase().contains(
+                word.english.toLowerCase(),
+              ),
+            )
+            .toList();
+        final ex = ListUtil.getRandomElement(blankable, _random);
+        return _Question(
+          word: word,
+          type: type,
+          prompt: _blankedPrompt(word, ex),
+          answer: word.english,
+        );
+      case _QuizType.aiFillInBlank:
+        return _Question(
+          word: word,
+          type: type,
+          prompt: _blankedPrompt(word, aiSentence!),
+          answer: word.english,
+        );
+    }
+  }
+
+  void _submit() {
+    final word = _questions[_current].word;
+    final userInput = _answerCtrl.text.trim().toLowerCase();
+    final acceptedAnswers = _questions[_current].answer
+        .split(RegExp(r'[；;，,]'))
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty);
+    final correct =
+        acceptedAnswers.any((a) => a == userInput) ||
+        userInput == _questions[_current].answer.trim().toLowerCase();
+    final newProficiency = (word.proficiency + (correct ? 10 : -10)).clamp(
+      ProficiencyLevel.veryUnfamiliar.score,
+      ProficiencyLevel.proficient.score,
+    );
+    setState(() {
+      _answered = true;
+      _isCorrect = correct;
+      if (correct) _correct++;
+      _results.add(
+        _QuizResult(
+          question: _questions[_current],
+          isCorrect: correct,
+          oldProficiency: word.proficiency,
+          newProficiency: newProficiency,
+          userAnswer: _answerCtrl.text.trim(),
+        ),
+      );
+    });
+  }
+
+  void _next() {
+    _answerFocus.unfocus();
+    if (_current + 1 >= _questions.length) {
+      for (final r in _results) {
+        _db.updateWord(r.question.word.copyWith(proficiency: r.newProficiency));
+      }
+      setState(() => _current = _questions.length);
+      if (_correct / _questions.length >= 0.8) {
+        _confettiController.play();
+      }
+    } else {
+      setState(() {
+        _current++;
+        _answered = false;
+        _isCorrect = false;
+        _answerCtrl.clear();
+      });
+    }
+  }
 }
 
 class _PreparingIndicator extends StatefulWidget {
@@ -710,6 +709,7 @@ class _QuizInfoItem extends StatelessWidget {
 }
 
 enum _QuizType { enToCn, cnToEn, fillInBlank, enDefinition, aiFillInBlank }
+
 class _Question {
   final Word word;
   final _QuizType type;

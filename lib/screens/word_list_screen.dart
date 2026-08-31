@@ -77,6 +77,148 @@ class _WordListScreenState extends State<WordListScreen> {
     );
   }
 
+  AppBar get _selectingAppBar {
+    final allSelected = _selectedIds.length == _words.length;
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _exitSelectMode,
+      ),
+      title: Text('已選 ${_selectedIds.length} 個'),
+      actions: [
+        TextButton(
+          onPressed: () => setState(() {
+            if (allSelected) {
+              _selectedIds.clear();
+            } else {
+              _selectedIds.addAll(_words.map((w) => w.id!));
+            }
+          }),
+          child: Text(allSelected ? '取消全選' : '全選'),
+        ),
+      ],
+    );
+  }
+
+  AppBar get _normalAppBar => AppBar(
+    title: Text(_wordBook.name),
+    actions: [
+      if (_words.isNotEmpty)
+        IconButton(
+          icon: const Icon(Icons.history_edu),
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QuizScreen(wordBookId: widget.wordBook.id),
+              ),
+            );
+            await _loadWords();
+          },
+        ),
+      PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert),
+        onSelected: (value) async {
+          if (value == 'settings') {
+            _editWordBook();
+          } else if (value == 'export') {
+            _exportWordBook();
+          } else if (value == 'sort') {
+            _showSortDialog();
+          }
+        },
+        itemBuilder: (_) => const [
+          PopupMenuItem(
+            value: 'settings',
+            child: ListTile(
+              leading: Icon(Icons.settings_outlined),
+              title: Text('單字書設定'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          PopupMenuItem(
+            value: 'sort',
+            child: ListTile(
+              leading: Icon(Icons.sort),
+              title: Text('排序'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+
+          PopupMenuItem(
+            value: 'export',
+            child: ListTile(
+              leading: Icon(Icons.upload_file_outlined),
+              title: Text('匯出此單字書'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+
+  Widget get _wordListView => _words.isEmpty
+      ? const Center(child: Text('還沒有單字，點 + 新增吧！'))
+      : SlidableAutoCloseBehavior(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            itemCount: _words.length,
+            itemBuilder: (context, index) {
+              final word = _words[index];
+              final selected = _selectedIds.contains(word.id);
+              return WordListTile(
+                word: word,
+                selected: selected,
+                isSelecting: _isSelecting,
+                onToggleSelect: () => _toggleSelection(word.id!),
+                onEnterSelectMode: () => _enterSelectMode(word.id!),
+                onDelete: () => _deleteWord(word.id!),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AddWordScreen(word: word),
+                    ),
+                  );
+                  await _loadWords();
+                },
+              );
+            },
+          ),
+        );
+
+  Widget get _moveToBookBar => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: FilledButton.icon(
+        icon: const Icon(Icons.drive_file_move_outline),
+        label: Text('移動到其他單字書（${_selectedIds.length}）'),
+        onPressed: _selectedIds.isEmpty ? null : _moveSelected,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          minimumSize: const Size.fromHeight(48),
+        ),
+      ),
+    ),
+  );
+
+  Widget get _addWordFab => GradientFAB(
+    onPressed: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddWordScreen(wordBookId: widget.wordBook.id!),
+        ),
+      );
+      await _loadWords();
+    },
+    child: const Icon(Icons.add),
+  );
+
   Future<void> _loadWords() async {
     final words = await _db.getWordsByWordBook(widget.wordBook.id!);
     setState(() {
@@ -338,148 +480,4 @@ class _WordListScreenState extends State<WordListScreen> {
     await _db.updateWordBook(updated);
     if (mounted) setState(() => _wordBook = updated);
   }
-
-
-
-  AppBar get _selectingAppBar {
-    final allSelected = _selectedIds.length == _words.length;
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.close),
-        onPressed: _exitSelectMode,
-      ),
-      title: Text('已選 ${_selectedIds.length} 個'),
-      actions: [
-        TextButton(
-          onPressed: () => setState(() {
-            if (allSelected) {
-              _selectedIds.clear();
-            } else {
-              _selectedIds.addAll(_words.map((w) => w.id!));
-            }
-          }),
-          child: Text(allSelected ? '取消全選' : '全選'),
-        ),
-      ],
-    );
-  }
-
-  AppBar get _normalAppBar => AppBar(
-    title: Text(_wordBook.name),
-    actions: [
-      if (_words.isNotEmpty)
-        IconButton(
-          icon: const Icon(Icons.history_edu),
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => QuizScreen(wordBookId: widget.wordBook.id),
-              ),
-            );
-            await _loadWords();
-          },
-        ),
-      PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert),
-        onSelected: (value) async {
-          if (value == 'settings') {
-            _editWordBook();
-          } else if (value == 'export') {
-            _exportWordBook();
-          } else if (value == 'sort') {
-            _showSortDialog();
-          }
-        },
-        itemBuilder: (_) => const [
-          PopupMenuItem(
-            value: 'settings',
-            child: ListTile(
-              leading: Icon(Icons.settings_outlined),
-              title: Text('單字書設定'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-          PopupMenuItem(
-            value: 'sort',
-            child: ListTile(
-              leading: Icon(Icons.sort),
-              title: Text('排序'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-
-          PopupMenuItem(
-            value: 'export',
-            child: ListTile(
-              leading: Icon(Icons.upload_file_outlined),
-              title: Text('匯出此單字書'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-
-  Widget get _wordListView => _words.isEmpty
-      ? const Center(child: Text('還沒有單字，點 + 新增吧！'))
-      : SlidableAutoCloseBehavior(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: _words.length,
-            itemBuilder: (context, index) {
-              final word = _words[index];
-              final selected = _selectedIds.contains(word.id);
-              return WordListTile(
-                word: word,
-                selected: selected,
-                isSelecting: _isSelecting,
-                onToggleSelect: () => _toggleSelection(word.id!),
-                onEnterSelectMode: () => _enterSelectMode(word.id!),
-                onDelete: () => _deleteWord(word.id!),
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AddWordScreen(word: word),
-                    ),
-                  );
-                  await _loadWords();
-                },
-              );
-            },
-          ),
-        );
-
-  Widget get _moveToBookBar => SafeArea(
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: FilledButton.icon(
-        icon: const Icon(Icons.drive_file_move_outline),
-        label: Text('移動到其他單字書（${_selectedIds.length}）'),
-        onPressed: _selectedIds.isEmpty ? null : _moveSelected,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          minimumSize: const Size.fromHeight(48),
-        ),
-      ),
-    ),
-  );
-
-  Widget get _addWordFab => GradientFAB(
-    onPressed: () async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AddWordScreen(wordBookId: widget.wordBook.id!),
-        ),
-      );
-      await _loadWords();
-    },
-    child: const Icon(Icons.add),
-  );
 }

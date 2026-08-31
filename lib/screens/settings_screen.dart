@@ -96,43 +96,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _loadRewardedAd() async {
-    await AdService.ensureInitialized();
-    RewardedAd.load(
-      adUnitId: AdService.rewardedAdUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) => _rewardedAd = ad,
-        onAdFailedToLoad: (_) => _rewardedAd = null,
-      ),
-    );
-  }
-
-  void _watchRewardedAd() {
-    final ad = _rewardedAd;
-    if (ad == null) return;
-    _rewardedAd = null;
-    ad.fullScreenContentCallback = FullScreenContentCallback(
-      onAdDismissedFullScreenContent: (ad) {
-        ad.dispose();
-        _loadRewardedAd();
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        ad.dispose();
-        _loadRewardedAd();
-      },
-    );
-    ad.show(
-      onUserEarnedReward: (ad, reward) async {
-        await AdService.grantAdFree();
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('謝謝支持！接下來的廣告已為你移除')));
-      },
-    );
-  }
-
   Widget _settingsCard(Widget expansionTile) => Card(
     margin: const EdgeInsets.only(bottom: 12),
     elevation: 3,
@@ -186,363 +149,336 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // AI 提供者card
   Widget get _aiProviderCard => _settingsCard(
-              ExpansionTile(
-                shape: const Border(),
-                collapsedShape: const Border(),
-                leading: const Icon(Icons.smart_toy_outlined),
-                title: const Text(
-                  'AI 提供者',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    ExpansionTile(
+      shape: const Border(),
+      collapsedShape: const Border(),
+      leading: const Icon(Icons.smart_toy_outlined),
+      title: const Text(
+        'AI 提供者',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      children: [
+        RadioGroup<AiProvider?>(
+          groupValue: _selectedProvider,
+          onChanged: (v) => setState(() => _selectedProvider = v),
+          child: Column(
+            children: [
+              const RadioListTile<AiProvider?>(title: Text('無'), value: null),
+              ...AiProvider.values.map(
+                (p) => RadioListTile<AiProvider?>(
+                  title: Text('${p.displayName} (${p.modelName})'),
+                  value: p,
                 ),
-                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                children: [
-                  RadioGroup<AiProvider?>(
-                    groupValue: _selectedProvider,
-                    onChanged: (v) => setState(() => _selectedProvider = v),
-                    child: Column(
-                      children: [
-                        const RadioListTile<AiProvider?>(
-                          title: Text('無'),
-                          value: null,
-                        ),
-                        ...AiProvider.values.map(
-                          (p) => RadioListTile<AiProvider?>(
-                            title: Text('${p.displayName} (${p.modelName})'),
-                            value: p,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
-            );
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget get _aiApiKeyCard => _settingsCard(
-              ExpansionTile(
-                shape: const Border(),
-                collapsedShape: const Border(),
-                leading: const Icon(Icons.vpn_key_outlined),
-                title: const Text(
-                  'API 金鑰',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    ExpansionTile(
+      shape: const Border(),
+      collapsedShape: const Border(),
+      leading: const Icon(Icons.vpn_key_outlined),
+      title: const Text(
+        'API 金鑰',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      children: [
+        ...AiProvider.values.map(
+          (p) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: TextField(
+              controller: _keyControllers[p],
+              obscureText: _obscured[p]!,
+              decoration: InputDecoration(
+                labelText: '${p.displayName} API Key',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscured[p]! ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscured[p] = !_obscured[p]!),
                 ),
-                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                children: [
-                  ...AiProvider.values.map(
-                    (p) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: TextField(
-                        controller: _keyControllers[p],
-                        obscureText: _obscured[p]!,
-                        decoration: InputDecoration(
-                          labelText: '${p.displayName} API Key',
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscured[p]!
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
-                            onPressed: () =>
-                                setState(() => _obscured[p] = !_obscured[p]!),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    '*金鑰僅儲存於本機裝置，只在呼叫 API 時使用',
-                    style: TextStyle(fontSize: 11, color: Colors.red),
-                  ),
-                ],
               ),
-            );           
-  
-  Widget get _aiPromptCard => _settingsCard(
-            ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              leading: const Icon(Icons.edit_note),
-              title: const Text(
-                'AI 提示詞',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    '用 {word} 代表輸入的英文單字',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ...SettingsService.promptFields.map(
-                  (field) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              SettingsService.promptLabel(field),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const Spacer(),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 150),
-                              child: _focusedPromptField == field
-                                  ? TextButton(
-                                      key: const ValueKey('insert'),
-                                      onPressed: () =>
-                                          _insertWordPlaceholder(field),
-                                      child: const Text('插入 {word}'),
-                                    )
-                                  : const SizedBox.shrink(
-                                      key: ValueKey('hidden'),
-                                    ),
-                            ),
-                            TextButton(
-                              onPressed: () => _resetPrompt(field),
-                              child: const Text('還原預設'),
-                            ),
-                          ],
-                        ),
-                        ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: _promptControllers[field]!,
-                          builder: (_, value, _) {
-                            if (value.text.contains(
-                              SettingsService.wordPlaceholder,
-                            )) {
-                              return const SizedBox.shrink();
-                            }
-                            return const Padding(
-                              padding: EdgeInsets.only(bottom: 4),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.warning_amber_rounded,
-                                    size: 14,
-                                    color: Colors.red,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '缺少目標單字標示！',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        TextField(
-                          controller: _promptControllers[field],
-                          focusNode: _promptFocusNodes[field],
-                          maxLines: 4,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-
-  Widget get _reviewCard => _settingsCard(
-            ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              leading: const Icon(Icons.school_outlined),
-              title: const Text(
-                '複習設定',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '出題熟練度範圍',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ),
-                RadioGroup<int>(
-                  groupValue: _quizMaxProficiency,
-                  onChanged: (v) => setState(() => _quizMaxProficiency = v!),
-                  child: Column(
-                    children: [
-                      RadioListTile<int>(
-                        title: const Text('全部'),
-                        value: ProficiencyLevel.proficient.score,
-                      ),
-                      RadioListTile<int>(
-                        title: const Text('普通以下'),
-                        value: ProficiencyLevel.proficient.score - 1,
-                      ),
-                      RadioListTile<int>(
-                        title: const Text('有點不熟以下'),
-                        value: ProficiencyLevel.neutral.score,
-                      ),
-                      RadioListTile<int>(
-                        title: const Text('非常不熟'),
-                        value: ProficiencyLevel.unfamiliar.score,
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 24),
-                const Text(
-                  'AI 出題',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 4),
-
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('AI 出題'),
-                  value: _aiQuizEnabled && _aiFeatureEnabled,
-                  onChanged: _aiFeatureEnabled
-                      ? (v) => setState(() => _aiQuizEnabled = v)
-                      : null,
-                ),
-                const Text(
-                  '開啟後，複習時題目有機率為 AI 生成例句填空題',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          );
-
-  Widget get _displayCard => _settingsCard(
-            ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              leading: const Icon(Icons.tune),
-              title: const Text(
-                '顯示設定',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                ValueListenableBuilder<bool>(
-                  valueListenable: SettingsService.showProficiencyIcons,
-                  builder: (context, show, child) => SwitchListTile(
-                    title: const Text('列表顯示單字熟練度'),
-                    value: show,
-                    onChanged: (v) => _settings.setShowProficiencyIcons(v),
-                  ),
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: SettingsService.showCreatedAt,
-                  builder: (context, show, child) => SwitchListTile(
-                    title: const Text('列表顯示單字創建時間'),
-                    value: show,
-                    onChanged: (v) => _settings.setShowCreatedAt(v),
-                  ),
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: SettingsService.hideChinese,
-                  builder: (context, hide, child) => SwitchListTile(
-                    title: const Text('隱藏單字中文翻譯'),
-                    value: hide,
-                    onChanged: (v) => _settings.setHideChinese(v),
-                  ),
-                ),
-              ],
-            ),
-          );
-
-  Widget get _dataManagementCard => _settingsCard(
-            ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              leading: const Icon(Icons.folder_open),
-              title: const Text(
-                '資料管理',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                ListTile(
-                  contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                  leading: const Icon(Icons.upload_file_outlined),
-                  title: const Text('匯出全部單字書'),
-                  onTap: _exportAll,
-                ),
-                ListTile(
-                  contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                  leading: const Icon(Icons.download_outlined),
-                  title: const Text('匯入單字書'),
-                  onTap: _import,
-                ),
-              ],
-            ),
-          );
-
-  Widget get _watchAdCard => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 3,
-            shadowColor: Colors.black26,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.favorite_border),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '支持開發者',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '看一支廣告支持我們，接下來 ${AppConfig.adFreeDuration.inHours} 小時內都不會顯示廣告',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: _watchRewardedAd,
-                    child: const Text('看廣告'),
-                  ),
-                ],
-              ),
-            ),
-          );
-   
-  Widget get _saveButton => Material(
-        color: Colors.transparent,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(40, 8, 40, 16),
-            child: GradientButton(
-              onPressed: _save,
-              height: 56,
-              child: const Text('儲存'),
             ),
           ),
         ),
-      ); 
+        const Text(
+          '*金鑰僅儲存於本機裝置，只在呼叫 API 時使用',
+          style: TextStyle(fontSize: 11, color: Colors.red),
+        ),
+      ],
+    ),
+  );
+
+  Widget get _aiPromptCard => _settingsCard(
+    ExpansionTile(
+      shape: const Border(),
+      collapsedShape: const Border(),
+      leading: const Icon(Icons.edit_note),
+      title: const Text(
+        'AI 提示詞',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text(
+            '用 {word} 代表輸入的英文單字',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        ...SettingsService.promptFields.map(
+          (field) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      SettingsService.promptLabel(field),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    const Spacer(),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 150),
+                      child: _focusedPromptField == field
+                          ? TextButton(
+                              key: const ValueKey('insert'),
+                              onPressed: () => _insertWordPlaceholder(field),
+                              child: const Text('插入 {word}'),
+                            )
+                          : const SizedBox.shrink(key: ValueKey('hidden')),
+                    ),
+                    TextButton(
+                      onPressed: () => _resetPrompt(field),
+                      child: const Text('還原預設'),
+                    ),
+                  ],
+                ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _promptControllers[field]!,
+                  builder: (_, value, _) {
+                    if (value.text.contains(SettingsService.wordPlaceholder)) {
+                      return const SizedBox.shrink();
+                    }
+                    return const Padding(
+                      padding: EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 14,
+                            color: Colors.red,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            '缺少目標單字標示！',
+                            style: TextStyle(color: Colors.red, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                TextField(
+                  controller: _promptControllers[field],
+                  focusNode: _promptFocusNodes[field],
+                  maxLines: 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget get _reviewCard => _settingsCard(
+    ExpansionTile(
+      shape: const Border(),
+      collapsedShape: const Border(),
+      leading: const Icon(Icons.school_outlined),
+      title: const Text(
+        '複習設定',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 4),
+          child: Text('出題熟練度範圍', style: TextStyle(fontWeight: FontWeight.w500)),
+        ),
+        RadioGroup<int>(
+          groupValue: _quizMaxProficiency,
+          onChanged: (v) => setState(() => _quizMaxProficiency = v!),
+          child: Column(
+            children: [
+              RadioListTile<int>(
+                title: const Text('全部'),
+                value: ProficiencyLevel.proficient.score,
+              ),
+              RadioListTile<int>(
+                title: const Text('普通以下'),
+                value: ProficiencyLevel.proficient.score - 1,
+              ),
+              RadioListTile<int>(
+                title: const Text('有點不熟以下'),
+                value: ProficiencyLevel.neutral.score,
+              ),
+              RadioListTile<int>(
+                title: const Text('非常不熟'),
+                value: ProficiencyLevel.unfamiliar.score,
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 24),
+        const Text('AI 出題', style: TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 4),
+
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('AI 出題'),
+          value: _aiQuizEnabled && _aiFeatureEnabled,
+          onChanged: _aiFeatureEnabled
+              ? (v) => setState(() => _aiQuizEnabled = v)
+              : null,
+        ),
+        const Text(
+          '開啟後，複習時題目有機率為 AI 生成例句填空題',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
+      ],
+    ),
+  );
+
+  Widget get _displayCard => _settingsCard(
+    ExpansionTile(
+      shape: const Border(),
+      collapsedShape: const Border(),
+      leading: const Icon(Icons.tune),
+      title: const Text(
+        '顯示設定',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: SettingsService.showProficiencyIcons,
+          builder: (context, show, child) => SwitchListTile(
+            title: const Text('列表顯示單字熟練度'),
+            value: show,
+            onChanged: (v) => _settings.setShowProficiencyIcons(v),
+          ),
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: SettingsService.showCreatedAt,
+          builder: (context, show, child) => SwitchListTile(
+            title: const Text('列表顯示單字創建時間'),
+            value: show,
+            onChanged: (v) => _settings.setShowCreatedAt(v),
+          ),
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: SettingsService.hideChinese,
+          builder: (context, hide, child) => SwitchListTile(
+            title: const Text('隱藏單字中文翻譯'),
+            value: hide,
+            onChanged: (v) => _settings.setHideChinese(v),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget get _dataManagementCard => _settingsCard(
+    ExpansionTile(
+      shape: const Border(),
+      collapsedShape: const Border(),
+      leading: const Icon(Icons.folder_open),
+      title: const Text(
+        '資料管理',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.only(left: 32, right: 16),
+          leading: const Icon(Icons.upload_file_outlined),
+          title: const Text('匯出全部單字書'),
+          onTap: _exportAll,
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.only(left: 32, right: 16),
+          leading: const Icon(Icons.download_outlined),
+          title: const Text('匯入單字書'),
+          onTap: _import,
+        ),
+      ],
+    ),
+  );
+
+  Widget get _watchAdCard => Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    elevation: 3,
+    shadowColor: Colors.black26,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          const Icon(Icons.favorite_border),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '支持開發者',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '看一支廣告支持我們，接下來 ${AppConfig.adFreeDuration.inHours} 小時內都不會顯示廣告',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(onPressed: _watchRewardedAd, child: const Text('看廣告')),
+        ],
+      ),
+    ),
+  );
+
+  Widget get _saveButton => Material(
+    color: Colors.transparent,
+    child: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(40, 8, 40, 16),
+        child: GradientButton(
+          onPressed: _save,
+          height: 56,
+          child: const Text('儲存'),
+        ),
+      ),
+    ),
+  );
 
   Future<void> _loadSettings() async {
     final provider = await _settings.getSelectedProvider();
@@ -750,7 +686,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  
+  Future<void> _loadRewardedAd() async {
+    await AdService.ensureInitialized();
+    RewardedAd.load(
+      adUnitId: AdService.rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) => _rewardedAd = ad,
+        onAdFailedToLoad: (_) => _rewardedAd = null,
+      ),
+    );
+  }
+
+  void _watchRewardedAd() {
+    final ad = _rewardedAd;
+    if (ad == null) return;
+    _rewardedAd = null;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _loadRewardedAd();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _loadRewardedAd();
+      },
+    );
+    ad.show(
+      onUserEarnedReward: (ad, reward) async {
+        await AdService.grantAdFree();
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('謝謝支持！接下來的廣告已為你移除')));
+      },
+    );
+  }
 }
 
 class _InfoItem extends StatelessWidget {

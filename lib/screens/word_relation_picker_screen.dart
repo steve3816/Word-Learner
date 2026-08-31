@@ -39,34 +39,6 @@ class _WordRelationPickerScreenState extends State<WordRelationPickerScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
-    final words = await _db.getWordsByWordBook(widget.wordBookId);
-    final candidates = words
-        .where((w) =>
-            w.id != widget.excludeWordId &&
-            !widget.alreadyRelatedIds.contains(w.id))
-        .toList();
-    if (mounted) {
-      setState(() {
-        _candidates = candidates;
-        _filtered = candidates;
-      });
-    }
-  }
-
-  void _applyFilter() {
-    final query = _searchCtrl.text.trim().toLowerCase();
-    setState(() {
-      _filtered = query.isEmpty
-          ? _candidates
-          : _candidates
-              .where((w) =>
-                  w.english.toLowerCase().contains(query) ||
-                  w.chinese.contains(query))
-              .toList();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,7 +49,9 @@ class _WordRelationPickerScreenState extends State<WordRelationPickerScreen> {
             onPressed: _selected.isEmpty
                 ? null
                 : () => Navigator.pop(context, _selected.toList()),
-            child: Text('新增${_selected.isEmpty ? '' : ' (${_selected.length})'}'),
+            child: Text(
+              '新增${_selected.isEmpty ? '' : ' (${_selected.length})'}',
+            ),
           ),
         ],
       ),
@@ -117,9 +91,10 @@ class _WordRelationPickerScreenState extends State<WordRelationPickerScreen> {
                             }
                           });
                         },
-                        title: Text(word.english,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w600)),
+                        title: Text(
+                          word.english,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                         subtitle: Text(word.chinese),
                       );
                     },
@@ -128,5 +103,37 @@ class _WordRelationPickerScreenState extends State<WordRelationPickerScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _load() async {
+    final words = await _db.getWordsByWordBook(widget.wordBookId);
+    final candidates = words
+        .where(
+          (w) =>
+              w.id != widget.excludeWordId &&
+              !widget.alreadyRelatedIds.contains(w.id),
+        )
+        .toList();
+    if (mounted) {
+      setState(() {
+        _candidates = candidates;
+        _filtered = candidates;
+      });
+    }
+  }
+
+  void _applyFilter() {
+    final query = _searchCtrl.text.trim().toLowerCase();
+    setState(() {
+      _filtered = query.isEmpty
+          ? _candidates
+          : _candidates
+                .where(
+                  (w) =>
+                      w.english.toLowerCase().contains(query) ||
+                      w.chinese.contains(query),
+                )
+                .toList();
+    });
   }
 }

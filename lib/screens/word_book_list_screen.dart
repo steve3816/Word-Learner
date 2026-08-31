@@ -71,6 +71,444 @@ class _WordBookListScreenState extends State<WordBookListScreen>
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_isSelecting,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _exitSelectMode();
+      },
+      child: Scaffold(
+        appBar: _appBar,
+        body: Stack(
+          children: [
+            DotGridBackground(
+              child: Column(
+                children: [
+                  _dashboard,
+                  const SizedBox(height: 8),
+                  _wordListsSection,
+                  if (!_isSelecting) const BannerAdWidget(),
+                ],
+              ),
+            ),
+            if (_showSearch) _searchOverlay,
+          ],
+        ),
+        bottomNavigationBar: _isSelecting
+            ? SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.drive_file_move_outline),
+                    label: Text('移動所有單字到...（已選 ${_selectedBookIds.length} 本）'),
+                    onPressed: _selectedBookIds.isEmpty
+                        ? null
+                        : _moveWordsFromSelected,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                ),
+              )
+            : null,
+        floatingActionButton: _isSelecting || _tabController.index != 0
+            ? null
+            : GradientFAB(
+                onPressed: _addWordBook,
+                child: const Icon(Icons.add),
+              ),
+      ),
+    );
+  }
+
+  Widget _bookTile((WordBook, int, int) entry, {Key? key}) {
+    final (book, count, avgProficiency) = entry;
+    final selected = _selectedBookIds.contains(book.id);
+    return Padding(
+      key: key,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected ? AppColors.surfaceSelected : AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2A2530).withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              // border 是半透明色，畫在最上層時要先跟卡片底色混合成不透明色，
+              // 不然疊在滑開的紅色刪除按鈕上會被染成深紅色而不是灰色。
+              color: selected
+                  ? AppColors.primary
+                  : Color.alphaBlend(AppColors.border, AppColors.surface),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Slidable(
+              key: Key('book_${book.id}'),
+              groupTag: 'book_list',
+              endActionPane: _isSelecting || book.isDefault
+                  ? null
+                  : ActionPane(
+                      motion: const DrawerMotion(),
+                      extentRatio: 0.2,
+                      children: [
+                        SlidableAction(
+                          onPressed: (_) => _deleteWordBook(book, count),
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
+                        ),
+                      ],
+                    ),
+              child: ListTile(
+                leading: _isSelecting
+                    ? Checkbox(
+                        value: selected,
+                        onChanged: (_) => _toggleBookSelection(book.id!),
+                        activeColor: AppColors.primary,
+                      )
+                    : const Icon(Icons.menu_book_rounded),
+                title: Text(
+                  book.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text('$count 個單字'),
+                trailing: _isSelecting
+                    ? null
+                    : (count > 0
+                          ? ListProficiencyIcon(avgProficiency, size: 24)
+                          : null),
+                onLongPress: _isSelecting
+                    ? null
+                    : () => _enterSelectMode(book.id!),
+                onTap: _isSelecting
+                    ? () => _toggleBookSelection(book.id!)
+                    : () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => WordListScreen(wordBook: book),
+                          ),
+                        );
+                        await _loadAll();
+                      },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 選取模式下用來拖曳排序：預設單字書固定在最上面（當作 header，不可拖曳），
+  /// 其餘單字書可以自由拖曳調整順序，放開後立刻寫回資料庫。
+  Widget _buildReorderableBookList() {
+    final defaultEntry = _wordBooks.where((b) => b.$1.isDefault).firstOrNull;
+    final others = _wordBooks.where((b) => !b.$1.isDefault).toList();
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      header: defaultEntry == null ? null : _bookTile(defaultEntry),
+      // 預設的拖曳外框是直角、不透明白底，會在圓角卡片外露出一圈白邊，
+      // 這裡改成透明底、跟卡片一樣的圓角，只留陰影效果。
+      proxyDecorator: (child, index, animation) => Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        elevation: 4,
+        shadowColor: Colors.black26,
+        child: child,
+      ),
+      itemCount: others.length,
+      itemBuilder: (context, index) {
+        final entry = others[index];
+        return _bookTile(entry, key: ValueKey(entry.$1.id));
+      },
+      onReorder: (oldIndex, newIndex) async {
+        if (newIndex > oldIndex) newIndex -= 1;
+        final reordered = List.of(others);
+        final moved = reordered.removeAt(oldIndex);
+        reordered.insert(newIndex, moved);
+        setState(() {
+          _wordBooks = [?defaultEntry, ...reordered];
+        });
+        await _db.updateWordBookOrder(reordered.map((b) => b.$1.id!).toList());
+      },
+    );
+  }
+
+  Widget _wordTile(Word word, String bookName) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 2,
+      shadowColor: Colors.black26,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: SettingsService.hideChinese,
+        builder: (context, hideChinese, child) => ListTile(
+          minTileHeight: 72,
+          title: Text(
+            word.english,
+            style: TextStyle(
+              fontSize: hideChinese ? 22 : 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: hideChinese ? null : Text(word.chinese),
+          trailing: child,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
+            );
+            await _loadAll();
+          },
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 80,
+              child: Text(
+                bookName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ListProficiencyIcon(word.proficiency, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _wordCrossListView(List<(Word, String)> words, String emptyText) {
+    if (words.isEmpty) {
+      return Center(child: Text(emptyText));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      itemCount: words.length,
+      itemBuilder: (_, i) => _wordTile(words[i].$1, words[i].$2),
+    );
+  }
+
+  Widget get _dashboard => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          _StatItem(label: '全部單字', value: '$_totalWords'),
+          Container(width: 1, height: 36, color: Colors.grey.shade200),
+          _StatItem(label: '本週新增', value: '$_recentWords'),
+          Container(width: 1, height: 36, color: Colors.grey.shade200),
+          _StatItem(label: '平均熟練度', value: '$_avgProficiency%'),
+        ],
+      ),
+    ),
+  );
+
+  Widget get _wordListsSection => Expanded(
+    child: Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '單字書'),
+            Tab(text: '最近'),
+            Tab(text: '非常不熟'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // ── 單字書列表 ──
+              _isSelecting
+                  ? _buildReorderableBookList()
+                  : SlidableAutoCloseBehavior(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: _wordBooks.isEmpty ? 1 : _wordBooks.length,
+                        itemBuilder: (context, index) {
+                          if (_wordBooks.isEmpty) {
+                            return const Center(child: Text('還沒有單字書，點 + 新增吧！'));
+                          }
+                          return _bookTile(_wordBooks[index]);
+                        },
+                      ),
+                    ),
+              // ── 最近新增 ──
+              _wordCrossListView(_recentWordsList, '還沒有單字，點 + 新增吧！'),
+              // ── 最不熟練 ──
+              _wordCrossListView(_leastProficientList, '還沒有單字，點 + 新增吧！'),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  AppBar get _appBar {
+    if (_isSelecting) {
+      final allSelected =
+          _wordBooks.isNotEmpty &&
+          _wordBooks.every((b) => _selectedBookIds.contains(b.$1.id));
+      return AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _exitSelectMode,
+        ),
+        title: Text('已選 ${_selectedBookIds.length} 本'),
+        actions: [
+          TextButton(
+            onPressed: () => setState(() {
+              if (allSelected) {
+                _selectedBookIds.clear();
+              } else {
+                _selectedBookIds.addAll(_wordBooks.map((b) => b.$1.id!));
+              }
+            }),
+            child: Text(allSelected ? '取消全選' : '全選'),
+          ),
+        ],
+      );
+    }
+    final totalWordCount = _wordBooks.fold(0, (sum, e) => sum + e.$2);
+    return AppBar(
+      actions: [
+        _searchButton,
+        if (totalWordCount >= 3) _reviewButton,
+        _settingsButton,
+      ],
+    );
+  }
+
+  Widget get _searchButton => IconButton(
+    icon: const Icon(Icons.search),
+    onPressed: () {
+      setState(() => _showSearch = true);
+      _searchFocus.requestFocus();
+    },
+  );
+
+  Widget get _reviewButton => IconButton(
+    icon: const Icon(Icons.history_edu),
+    onPressed: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const QuizScreen()),
+      );
+      if (mounted) await _loadAll();
+    },
+  );
+
+  Widget get _settingsButton => IconButton(
+    icon: const Icon(Icons.settings),
+    onPressed: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      );
+      _loadAll();
+    },
+  );
+
+  Widget get _searchOverlay => Material(
+    color: Colors.white,
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: TextField(
+            controller: _searchCtrl,
+            focusNode: _searchFocus,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: '搜尋單字...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _closeSearch,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: _onSearchChanged,
+          ),
+        ),
+        Expanded(
+          child: _searchCtrl.text.isEmpty
+              ? const Center(
+                  child: Text('請輸入關鍵字', style: TextStyle(color: Colors.grey)),
+                )
+              : _searchResults.isEmpty
+              ? const Center(
+                  child: Text('沒有符合的單字', style: TextStyle(color: Colors.grey)),
+                )
+              : ListView.builder(
+                  itemCount: _searchResults.length,
+                  itemBuilder: (context, index) {
+                    final (word, bookName) = _searchResults[index];
+                    return ListTile(
+                      leading: ListProficiencyIcon(word.proficiency, size: 28),
+                      title: Text(word.english),
+                      subtitle: Text(word.chinese),
+                      trailing: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 80),
+                        child: Text(
+                          bookName,
+                          textAlign: TextAlign.end,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      onTap: () async {
+                        _closeSearch();
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddWordScreen(word: word),
+                          ),
+                        );
+                        await _loadAll();
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    ),
+  );
+
   Future<void> _loadAll() async {
     final results = await Future.wait([
       _db.getAllWordBooksWithCount(),
@@ -290,444 +728,6 @@ class _WordBookListScreenState extends State<WordBookListScreen>
       showSuccessSnackBar(context, '已將 $count 本單字書的單字移動到「${target.name}」');
     }
   }
-
-  Widget _bookTile((WordBook, int, int) entry, {Key? key}) {
-    final (book, count, avgProficiency) = entry;
-    final selected = _selectedBookIds.contains(book.id);
-    return Padding(
-      key: key,
-      padding: const EdgeInsets.only(bottom: 10),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: selected ? AppColors.surfaceSelected : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF2A2530).withValues(alpha: 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              // border 是半透明色，畫在最上層時要先跟卡片底色混合成不透明色，
-              // 不然疊在滑開的紅色刪除按鈕上會被染成深紅色而不是灰色。
-              color: selected
-                  ? AppColors.primary
-                  : Color.alphaBlend(AppColors.border, AppColors.surface),
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Slidable(
-              key: Key('book_${book.id}'),
-              groupTag: 'book_list',
-              endActionPane: _isSelecting || book.isDefault
-                  ? null
-                  : ActionPane(
-                      motion: const DrawerMotion(),
-                      extentRatio: 0.2,
-                      children: [
-                        SlidableAction(
-                          onPressed: (_) => _deleteWordBook(book, count),
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          icon: Icons.delete,
-                        ),
-                      ],
-                    ),
-              child: ListTile(
-                leading: _isSelecting
-                    ? Checkbox(
-                        value: selected,
-                        onChanged: (_) => _toggleBookSelection(book.id!),
-                        activeColor: AppColors.primary,
-                      )
-                    : const Icon(Icons.menu_book_rounded),
-                title: Text(
-                  book.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text('$count 個單字'),
-                trailing: _isSelecting
-                    ? null
-                    : (count > 0
-                          ? ListProficiencyIcon(avgProficiency, size: 24)
-                          : null),
-                onLongPress: _isSelecting
-                    ? null
-                    : () => _enterSelectMode(book.id!),
-                onTap: _isSelecting
-                    ? () => _toggleBookSelection(book.id!)
-                    : () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => WordListScreen(wordBook: book),
-                          ),
-                        );
-                        await _loadAll();
-                      },
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 選取模式下用來拖曳排序：預設單字書固定在最上面（當作 header，不可拖曳），
-  /// 其餘單字書可以自由拖曳調整順序，放開後立刻寫回資料庫。
-  Widget _buildReorderableBookList() {
-    final defaultEntry = _wordBooks.where((b) => b.$1.isDefault).firstOrNull;
-    final others = _wordBooks.where((b) => !b.$1.isDefault).toList();
-    return ReorderableListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      header: defaultEntry == null ? null : _bookTile(defaultEntry),
-      // 預設的拖曳外框是直角、不透明白底，會在圓角卡片外露出一圈白邊，
-      // 這裡改成透明底、跟卡片一樣的圓角，只留陰影效果。
-      proxyDecorator: (child, index, animation) => Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        elevation: 4,
-        shadowColor: Colors.black26,
-        child: child,
-      ),
-      itemCount: others.length,
-      itemBuilder: (context, index) {
-        final entry = others[index];
-        return _bookTile(entry, key: ValueKey(entry.$1.id));
-      },
-      onReorder: (oldIndex, newIndex) async {
-        if (newIndex > oldIndex) newIndex -= 1;
-        final reordered = List.of(others);
-        final moved = reordered.removeAt(oldIndex);
-        reordered.insert(newIndex, moved);
-        setState(() {
-          _wordBooks = [?defaultEntry, ...reordered];
-        });
-        await _db.updateWordBookOrder(reordered.map((b) => b.$1.id!).toList());
-      },
-    );
-  }
-
-  Widget _wordTile(Word word, String bookName) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 2,
-      shadowColor: Colors.black26,
-      child: ValueListenableBuilder<bool>(
-        valueListenable: SettingsService.hideChinese,
-        builder: (context, hideChinese, child) => ListTile(
-          minTileHeight: 72,
-          title: Text(
-            word.english,
-            style: TextStyle(
-              fontSize: hideChinese ? 22 : 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          subtitle: hideChinese ? null : Text(word.chinese),
-          trailing: child,
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AddWordScreen(word: word)),
-            );
-            await _loadAll();
-          },
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 80,
-              child: Text(
-                bookName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.end,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ListProficiencyIcon(word.proficiency, size: 22),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _wordCrossListView(List<(Word, String)> words, String emptyText) {
-    if (words.isEmpty) {
-      return Center(child: Text(emptyText));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      itemCount: words.length,
-      itemBuilder: (_, i) => _wordTile(words[i].$1, words[i].$2),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_isSelecting,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _exitSelectMode();
-      },
-      child: Scaffold(
-        appBar: _appBar,
-        body: Stack(
-          children: [
-            DotGridBackground(
-              child: Column(
-                children: [
-                  _dashboard,
-                  const SizedBox(height: 8),
-                  _wordListsSection,
-                  if (!_isSelecting) const BannerAdWidget(),
-                ],
-              ),
-            ),
-            if (_showSearch) _searchOverlay,
-          ],
-        ),
-        bottomNavigationBar: _isSelecting
-            ? SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.drive_file_move_outline),
-                    label: Text('移動所有單字到...（已選 ${_selectedBookIds.length} 本）'),
-                    onPressed: _selectedBookIds.isEmpty
-                        ? null
-                        : _moveWordsFromSelected,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                  ),
-                ),
-              )
-            : null,
-        floatingActionButton: _isSelecting || _tabController.index != 0
-            ? null
-            : GradientFAB(
-                onPressed: _addWordBook,
-                child: const Icon(Icons.add),
-              ),
-      ),
-    );
-  }
-
-  Widget get _dashboard => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          _StatItem(label: '全部單字', value: '$_totalWords'),
-          Container(width: 1, height: 36, color: Colors.grey.shade200),
-          _StatItem(label: '本週新增', value: '$_recentWords'),
-          Container(width: 1, height: 36, color: Colors.grey.shade200),
-          _StatItem(label: '平均熟練度', value: '$_avgProficiency%'),
-        ],
-      ),
-    ),
-  );
-
-  Widget get _wordListsSection => Expanded(
-    child: Column(
-      children: [
-        TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: '單字書'),
-            Tab(text: '最近'),
-            Tab(text: '非常不熟'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              // ── 單字書列表 ──
-              _isSelecting
-                  ? _buildReorderableBookList()
-                  : SlidableAutoCloseBehavior(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        itemCount: _wordBooks.isEmpty ? 1 : _wordBooks.length,
-                        itemBuilder: (context, index) {
-                          if (_wordBooks.isEmpty) {
-                            return const Center(child: Text('還沒有單字書，點 + 新增吧！'));
-                          }
-                          return _bookTile(_wordBooks[index]);
-                        },
-                      ),
-                    ),
-              // ── 最近新增 ──
-              _wordCrossListView(_recentWordsList, '還沒有單字，點 + 新增吧！'),
-              // ── 最不熟練 ──
-              _wordCrossListView(_leastProficientList, '還沒有單字，點 + 新增吧！'),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-
-  AppBar get _appBar {
-    if (_isSelecting) {
-      final allSelected =
-          _wordBooks.isNotEmpty &&
-          _wordBooks.every((b) => _selectedBookIds.contains(b.$1.id));
-      return AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _exitSelectMode,
-        ),
-        title: Text('已選 ${_selectedBookIds.length} 本'),
-        actions: [
-          TextButton(
-            onPressed: () => setState(() {
-              if (allSelected) {
-                _selectedBookIds.clear();
-              } else {
-                _selectedBookIds.addAll(_wordBooks.map((b) => b.$1.id!));
-              }
-            }),
-            child: Text(allSelected ? '取消全選' : '全選'),
-          ),
-        ],
-      );
-    }
-    final totalWordCount = _wordBooks.fold(0, (sum, e) => sum + e.$2);
-    return AppBar(
-      actions: [
-        _searchButton,
-        if (totalWordCount >= 3) _reviewButton,
-        _settingsButton,
-      ],
-    );
-  }
-
-  Widget get _searchButton => IconButton(
-    icon: const Icon(Icons.search),
-    onPressed: () {
-      setState(() => _showSearch = true);
-      _searchFocus.requestFocus();
-    },
-  );
-
-  Widget get _reviewButton => IconButton(
-    icon: const Icon(Icons.history_edu),
-    onPressed: () async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const QuizScreen()),
-      );
-      if (mounted) await _loadAll();
-    },
-  );
-
-  Widget get _settingsButton => IconButton(
-    icon: const Icon(Icons.settings),
-    onPressed: () async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const SettingsScreen()),
-      );
-      _loadAll();
-    },
-  );
-
-  Widget get _searchOverlay => Material(
-    color: Colors.white,
-    child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: TextField(
-            controller: _searchCtrl,
-            focusNode: _searchFocus,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: '搜尋單字...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _closeSearch,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onChanged: _onSearchChanged,
-          ),
-        ),
-        Expanded(
-          child: _searchCtrl.text.isEmpty
-              ? const Center(
-                  child: Text('請輸入關鍵字', style: TextStyle(color: Colors.grey)),
-                )
-              : _searchResults.isEmpty
-              ? const Center(
-                  child: Text('沒有符合的單字', style: TextStyle(color: Colors.grey)),
-                )
-              : ListView.builder(
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, index) {
-                    final (word, bookName) = _searchResults[index];
-                    return ListTile(
-                      leading: ListProficiencyIcon(word.proficiency, size: 28),
-                      title: Text(word.english),
-                      subtitle: Text(word.chinese),
-                      trailing: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 80),
-                        child: Text(
-                          bookName,
-                          textAlign: TextAlign.end,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      onTap: () async {
-                        _closeSearch();
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AddWordScreen(word: word),
-                          ),
-                        );
-                        await _loadAll();
-                      },
-                    );
-                  },
-                ),
-        ),
-      ],
-    ),
-  );
 }
 
 class _StatItem extends StatelessWidget {

@@ -137,442 +137,89 @@ class _AddWordScreenState extends State<AddWordScreen> {
     super.dispose();
   }
 
-  void _onViewScroll() {
-    final show = _viewScrollController.offset > 80;
-    if (show != _showTitleWord) {
-      setState(() => _showTitleWord = show);
-    }
-  }
+  // ── Build ────────────────────────────────────────────────────
 
-  Future<void> _loadWordList() async {
-    final words = await _db.getWordsByWordBook(_currentWord!.wordBookId);
-    final idx = words.indexWhere((w) => w.id == _currentWord!.id);
-    if (mounted) {
-      setState(() {
-        _wordList = words;
-        _wordIndex = idx == -1 ? 0 : idx;
-      });
-    }
-  }
-
-  void _navigateTo(int index) {
-    final word = _wordList![index];
-    for (final e in _examples) {
-      e.dispose();
-    }
-    if (_viewScrollController.hasClients) _viewScrollController.jumpTo(0);
-    setState(() {
-      _currentWord = word;
-      _proficiency = word.proficiency;
-      _excludeFromQuiz = word.excludeFromQuiz;
-      _excludeFromAiQuiz = word.excludeFromAiQuiz;
-      _wordIndex = index;
-      _showTitleWord = false;
-      _revealChinese = false;
-      _englishCtrl.text = word.english;
-      _chineseCtrl.text = word.chinese;
-      _explanationCtrl.text = word.englishExplanation ?? '';
-      _notesCtrl.text = word.notes ?? '';
-      _examples
-        ..clear()
-        ..addAll(
-          word.examples.map(
-            (ex) => _ExampleEntry(
-              sentence: ex.sentence,
-              translation: ex.chineseTranslation ?? '',
-            ),
-          ),
-        );
-    });
-    _loadRelatedWords();
-  }
-
-  Future<void> _loadRelatedWords() async {
-    final id = _currentWord?.id;
-    if (id == null) return;
-    final words = await _db.getRelatedWords(id);
-    if (mounted) setState(() => _relatedWords = words);
-  }
-
-  Future<void> _openRelationPicker() async {
-    final word = _currentWord;
-    final wordBookId = word?.wordBookId ?? widget.wordBookId!;
-    final selected = await Navigator.push<List<int>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => WordRelationPickerScreen(
-          wordBookId: wordBookId,
-          excludeWordId: word?.id,
-          alreadyRelatedIds: _relatedWords.map((w) => w.id!).toSet(),
-        ),
-      ),
-    );
-    if (selected == null || selected.isEmpty) return;
-    if (word?.id != null) {
-      // 編輯既有單字：立刻寫入關聯。
-      await _db.addWordRelations(word!.id!, selected);
-      await _loadRelatedWords();
-    } else {
-      // 新增單字尚未存檔、沒有 id，先記在本機，存檔時才一併寫入關聯。
-      final picked = await Future.wait(selected.map(_db.getWordById));
-      setState(
-        () => _relatedWords = [..._relatedWords, ...picked.whereType<Word>()],
-      );
-    }
-  }
-
-  Future<void> _removeRelation(Word relatedWord) async {
-    final id = _currentWord?.id;
-    if (id != null && relatedWord.id != null) {
-      await _db.removeWordRelation(id, relatedWord.id!);
-      await _loadRelatedWords();
-    } else {
-      setState(
-        () => _relatedWords = _relatedWords
-            .where((w) => w.id != relatedWord.id)
-            .toList(),
-      );
-    }
-  }
-
-  Future<void> _openRelatedWord(Word relatedWord) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => AddWordScreen(word: relatedWord)),
-    );
-    await _loadRelatedWords();
-  }
-
-  Future<void> _loadSettings() async {
-    final service = await _settings.getActiveService();
-    final prompts = <String, String>{};
-    for (final field in SettingsService.promptFields) {
-      prompts[field] = await _settings.getPrompt(field);
-    }
-    if (mounted) {
-      setState(() {
-        _aiService = service;
-        _prompts.addAll(prompts);
-      });
-    }
-  }
-
-  String _buildPrompt(String field) {
-    return (_prompts[field] ?? '').replaceAll(
-      SettingsService.wordPlaceholder,
-      _englishCtrl.text.trim(),
-    );
-  }
-
-  String _defaultEnglishPrompt() => (_prompts['english'] ?? '').replaceAll(
-    SettingsService.wordPlaceholder,
-    _chineseCtrl.text.trim(),
-  );
-
-  String _defaultExampleSentencePrompt(int index) =>
-      '使用英文單字「${_englishCtrl.text.trim()}」，'
-      '根據中文意思「${_examples[index].translationCtrl.text.trim()}」，'
-      '翻譯成英文。';
-
-  String _defaultExampleTranslationPrompt(int index) =>
-      '將以下英文例句翻譯成繁體中文：「${_examples[index].sentenceCtrl.text.trim()}」。';
-
-  /// 長按 AI 按鈕時彈出，讓使用者針對這一次呼叫臨時修改提示詞（不會存回設定）。
-  /// 取消或沒有修改則回傳 null，維持原本的預設提示詞。
-  Future<String?> _promptOverrideDialog(
-    String defaultPrompt,
-    String fieldLabel,
-  ) async {
-    final ctrl = TextEditingController(text: defaultPrompt);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('自訂本次提示詞'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '欄位：$fieldLabel',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: ctrl,
-              autofocus: true,
-              minLines: 4,
-              maxLines: 10,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-            ),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    final AppBar appBar;
+    if (!_isEditing) {
+      appBar = AppBar(
+        title: AnimatedOpacity(
+          opacity: _showTitleWord ? 1 : 0,
+          duration: const Duration(milliseconds: 150),
+          child: Text(_currentWord?.english ?? ''),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('送出'),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => setState(() => _isEditing = true),
           ),
         ],
-      ),
-    );
-    return confirmed == true ? ctrl.text.trim() : null;
-  }
+      );
+    } else if (widget.word != null) {
+      appBar = AppBar(
+        title: const Text('編輯單字'),
+        actions: [TextButton(onPressed: _cancelEdit, child: const Text('取消'))],
+      );
+    } else {
+      appBar = AppBar(title: const Text('新增單字'));
+    }
 
-  void _showAiError(Object e) {
-    final message = switch (e) {
-      SocketException() ||
-      TimeoutException() ||
-      http.ClientException() => '網路連線失敗，請檢查網路狀態後再試一次',
-      Exception() => e.toString().replaceFirst('Exception: ', ''),
-      _ => e.toString(),
-    };
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('AI 回應失敗'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('關閉'),
+    final hasList = !_isEditing && _wordList != null && _wordList!.length > 1;
+    final hasPrev = hasList && _wordIndex > 0;
+    final hasNext = hasList && _wordIndex < _wordList!.length - 1;
+
+    final Widget bodyContent;
+    if (_isEditing) {
+      bodyContent = _buildEditMode();
+    } else if (hasList) {
+      bodyContent = Column(
+        children: [
+          Expanded(child: _buildViewMode()),
+          SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 56,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(
+                    '${_wordIndex + 1} / ${_wordList!.length}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  if (hasPrev)
+                    Align(
+                      alignment: const Alignment(-0.5, 0),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () => _navigateTo(_wordIndex - 1),
+                      ),
+                    ),
+                  if (hasNext)
+                    Align(
+                      alignment: const Alignment(0.5, 0),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () => _navigateTo(_wordIndex + 1),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Future<void> _generateEnglish({String? overridePrompt}) async {
-    if (_chineseCtrl.text.trim().isEmpty || _aiService == null) return;
-    setState(() => _loadingEnglish = true);
-    try {
-      final prompt = overridePrompt ?? _defaultEnglishPrompt();
-      final result = await _aiService!.complete(prompt);
-      _englishCtrl.text = result.trim();
-    } catch (e) {
-      if (mounted) _showAiError(e);
-    } finally {
-      if (mounted) setState(() => _loadingEnglish = false);
-    }
-  }
-
-  Future<void> _generateChinese({String? overridePrompt}) async {
-    if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
-    setState(() => _loadingChinese = true);
-    try {
-      final prompt = overridePrompt ?? _buildPrompt('chinese');
-      final result = await _aiService!.complete(prompt);
-      _chineseCtrl.text = result;
-    } catch (e) {
-      if (mounted) _showAiError(e);
-    } finally {
-      if (mounted) setState(() => _loadingChinese = false);
-    }
-  }
-
-  Future<void> _generateExplanation({String? overridePrompt}) async {
-    if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
-    setState(() => _loadingExplanation = true);
-    try {
-      final prompt = overridePrompt ?? _buildPrompt('explanation');
-      final result = await _aiService!.complete(prompt);
-      _explanationCtrl.text = result;
-    } catch (e) {
-      if (mounted) _showAiError(e);
-    } finally {
-      if (mounted) setState(() => _loadingExplanation = false);
-    }
-  }
-
-  Future<void> _generateExampleSentence(
-    int index, {
-    String? overridePrompt,
-  }) async {
-    if (_aiService == null) return;
-    final entry = _examples[index];
-    if (entry.translationCtrl.text.trim().isEmpty) return;
-    setState(() => entry.loadingSentence = true);
-    try {
-      final content = overridePrompt ?? _defaultExampleSentencePrompt(index);
-      final prompt = '$content$_sentenceOnlyFormatSuffix';
-      final result = await _aiService!.complete(prompt);
-      entry.sentenceCtrl.text = result.trim();
-    } catch (e) {
-      if (mounted) _showAiError(e);
-    } finally {
-      if (mounted) setState(() => entry.loadingSentence = false);
-    }
-  }
-
-  Future<void> _generateExampleTranslation(
-    int index, {
-    String? overridePrompt,
-  }) async {
-    if (_aiService == null) return;
-    final entry = _examples[index];
-    if (entry.sentenceCtrl.text.trim().isEmpty) return;
-    setState(() => entry.loadingTranslation = true);
-    try {
-      final content = overridePrompt ?? _defaultExampleTranslationPrompt(index);
-      final prompt = '$content$_translationOnlyFormatSuffix';
-      final result = await _aiService!.complete(prompt);
-      entry.translationCtrl.text = result.trim();
-    } catch (e) {
-      if (mounted) _showAiError(e);
-    } finally {
-      if (mounted) setState(() => entry.loadingTranslation = false);
-    }
-  }
-
-  Future<void> _generateExample(int index, {String? overridePrompt}) async {
-    if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
-    setState(() => _examples[index].loading = true);
-    try {
-      final content = overridePrompt ?? _buildPrompt('example');
-      final prompt = '$content${ExampleSentence.jsonFormatSuffix}';
-      final raw = await _aiService!.complete(prompt);
-      final result = ExampleSentence.parseJson(raw);
-      _examples[index].sentenceCtrl.text = result.sentence;
-      _examples[index].translationCtrl.text = result.chineseTranslation ?? '';
-    } catch (e) {
-      if (mounted) _showAiError(e);
-    } finally {
-      if (mounted) setState(() => _examples[index].loading = false);
-    }
-  }
-
-  void _addExample() => setState(() => _examples.add(_ExampleEntry()));
-
-  void _removeExample(int index) {
-    setState(() {
-      _examples[index].dispose();
-      _examples.removeAt(index);
-    });
-  }
-
-  void _cancelEdit() {
-    final word = _currentWord!;
-    _englishCtrl.text = word.english;
-    _chineseCtrl.text = word.chinese;
-    _explanationCtrl.text = word.englishExplanation ?? '';
-    _notesCtrl.text = word.notes ?? '';
-    for (final e in _examples) {
-      e.dispose();
-    }
-    _examples.clear();
-    for (final ex in word.examples) {
-      _examples.add(
-        _ExampleEntry(
-          sentence: ex.sentence,
-          translation: ex.chineseTranslation ?? '',
-        ),
       );
-    }
-    setState(() {
-      _proficiency = word.proficiency;
-      _excludeFromQuiz = word.excludeFromQuiz;
-      _excludeFromAiQuiz = word.excludeFromAiQuiz;
-      _isEditing = false;
-    });
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final english = _englishCtrl.text.trim();
-    final invalidIndices = <int>[];
-    for (int i = 0; i < _examples.length; i++) {
-      final sentence = _examples[i].sentenceCtrl.text.trim();
-      if (sentence.isNotEmpty &&
-          !sentence.toLowerCase().contains(english.toLowerCase())) {
-        invalidIndices.add(i + 1);
-      }
-    }
-    if (invalidIndices.isNotEmpty && mounted) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('例句未包含單字'),
-          content: Text(
-            '例句 ${invalidIndices.join('、')} 未包含英文單字「$english」。\n\n'
-            '例句仍可儲存，但複習時將不會納入出題範圍。',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('返回修改'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('仍要儲存'),
-            ),
-          ],
-        ),
-      );
-      if (proceed != true) return;
+    } else {
+      bodyContent = _buildViewMode();
     }
 
-    final examples = _examples
-        .where((e) => e.sentenceCtrl.text.trim().isNotEmpty)
-        .map(
-          (e) => ExampleSentence(
-            sentence: e.sentenceCtrl.text.trim(),
-            chineseTranslation: e.translationCtrl.text.trim().isEmpty
-                ? null
-                : e.translationCtrl.text.trim(),
-          ),
-        )
-        .toList();
-
-    final word = Word(
-      id: _currentWord?.id,
-      english: english,
-      chinese: _chineseCtrl.text.trim(),
-      englishExplanation: _explanationCtrl.text.trim().isEmpty
-          ? null
-          : _explanationCtrl.text.trim(),
-      examples: examples,
-      createdAt: _currentWord?.createdAt ?? DateTime.now(),
-      wordBookId: _currentWord?.wordBookId ?? widget.wordBookId!,
-      proficiency: _proficiency,
-      notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-      excludeFromQuiz: _excludeFromQuiz,
-      excludeFromAiQuiz: _excludeFromAiQuiz,
+    return Scaffold(
+      appBar: appBar,
+      body: DotGridBackground(child: bodyContent),
     );
-    try {
-      if (_currentWord == null) {
-        final newId = await _db.insertWord(word);
-        if (_relatedWords.isNotEmpty) {
-          await _db.addWordRelations(
-            newId,
-            _relatedWords.map((w) => w.id!).toList(),
-          );
-        }
-        WidgetService.syncWords();
-        if (!mounted) return;
-        if (widget.viewAfterCreate) {
-          setState(() {
-            _currentWord = word.copyWith(id: newId);
-            _isEditing = false;
-          });
-        } else {
-          Navigator.pop(context);
-        }
-      } else {
-        await _db.updateWord(word);
-        WidgetService.syncWords();
-        if (mounted) {
-          setState(() {
-            _currentWord = word;
-            _isEditing = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) showErrorSnackBar(context, '儲存失敗：$e');
-    }
   }
 
   // ── Shared helpers ──────────────────────────────────────────
@@ -1555,88 +1202,443 @@ class _AddWordScreenState extends State<AddWordScreen> {
     );
   }
 
-  // ── Build ────────────────────────────────────────────────────
+  // ── Actions ──────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    final AppBar appBar;
-    if (!_isEditing) {
-      appBar = AppBar(
-        title: AnimatedOpacity(
-          opacity: _showTitleWord ? 1 : 0,
-          duration: const Duration(milliseconds: 150),
-          child: Text(_currentWord?.english ?? ''),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => setState(() => _isEditing = true),
-          ),
-        ],
-      );
-    } else if (widget.word != null) {
-      appBar = AppBar(
-        title: const Text('編輯單字'),
-        actions: [TextButton(onPressed: _cancelEdit, child: const Text('取消'))],
-      );
-    } else {
-      appBar = AppBar(title: const Text('新增單字'));
+  void _onViewScroll() {
+    final show = _viewScrollController.offset > 80;
+    if (show != _showTitleWord) {
+      setState(() => _showTitleWord = show);
     }
+  }
 
-    final hasList = !_isEditing && _wordList != null && _wordList!.length > 1;
-    final hasPrev = hasList && _wordIndex > 0;
-    final hasNext = hasList && _wordIndex < _wordList!.length - 1;
+  Future<void> _loadWordList() async {
+    final words = await _db.getWordsByWordBook(_currentWord!.wordBookId);
+    final idx = words.indexWhere((w) => w.id == _currentWord!.id);
+    if (mounted) {
+      setState(() {
+        _wordList = words;
+        _wordIndex = idx == -1 ? 0 : idx;
+      });
+    }
+  }
 
-    final Widget bodyContent;
-    if (_isEditing) {
-      bodyContent = _buildEditMode();
-    } else if (hasList) {
-      bodyContent = Column(
-        children: [
-          Expanded(child: _buildViewMode()),
-          SafeArea(
-            top: false,
-            child: SizedBox(
-              height: 56,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Text(
-                    '${_wordIndex + 1} / ${_wordList!.length}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  if (hasPrev)
-                    Align(
-                      alignment: const Alignment(-0.5, 0),
-                      child: IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        onPressed: () => _navigateTo(_wordIndex - 1),
-                      ),
-                    ),
-                  if (hasNext)
-                    Align(
-                      alignment: const Alignment(0.5, 0),
-                      child: IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        onPressed: () => _navigateTo(_wordIndex + 1),
-                      ),
-                    ),
-                ],
-              ),
+  void _navigateTo(int index) {
+    final word = _wordList![index];
+    for (final e in _examples) {
+      e.dispose();
+    }
+    if (_viewScrollController.hasClients) _viewScrollController.jumpTo(0);
+    setState(() {
+      _currentWord = word;
+      _proficiency = word.proficiency;
+      _excludeFromQuiz = word.excludeFromQuiz;
+      _excludeFromAiQuiz = word.excludeFromAiQuiz;
+      _wordIndex = index;
+      _showTitleWord = false;
+      _revealChinese = false;
+      _englishCtrl.text = word.english;
+      _chineseCtrl.text = word.chinese;
+      _explanationCtrl.text = word.englishExplanation ?? '';
+      _notesCtrl.text = word.notes ?? '';
+      _examples
+        ..clear()
+        ..addAll(
+          word.examples.map(
+            (ex) => _ExampleEntry(
+              sentence: ex.sentence,
+              translation: ex.chineseTranslation ?? '',
             ),
           ),
-        ],
-      );
+        );
+    });
+    _loadRelatedWords();
+  }
+
+  Future<void> _loadRelatedWords() async {
+    final id = _currentWord?.id;
+    if (id == null) return;
+    final words = await _db.getRelatedWords(id);
+    if (mounted) setState(() => _relatedWords = words);
+  }
+
+  Future<void> _openRelationPicker() async {
+    final word = _currentWord;
+    final wordBookId = word?.wordBookId ?? widget.wordBookId!;
+    final selected = await Navigator.push<List<int>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WordRelationPickerScreen(
+          wordBookId: wordBookId,
+          excludeWordId: word?.id,
+          alreadyRelatedIds: _relatedWords.map((w) => w.id!).toSet(),
+        ),
+      ),
+    );
+    if (selected == null || selected.isEmpty) return;
+    if (word?.id != null) {
+      // 編輯既有單字：立刻寫入關聯。
+      await _db.addWordRelations(word!.id!, selected);
+      await _loadRelatedWords();
     } else {
-      bodyContent = _buildViewMode();
+      // 新增單字尚未存檔、沒有 id，先記在本機，存檔時才一併寫入關聯。
+      final picked = await Future.wait(selected.map(_db.getWordById));
+      setState(
+        () => _relatedWords = [..._relatedWords, ...picked.whereType<Word>()],
+      );
+    }
+  }
+
+  Future<void> _removeRelation(Word relatedWord) async {
+    final id = _currentWord?.id;
+    if (id != null && relatedWord.id != null) {
+      await _db.removeWordRelation(id, relatedWord.id!);
+      await _loadRelatedWords();
+    } else {
+      setState(
+        () => _relatedWords = _relatedWords
+            .where((w) => w.id != relatedWord.id)
+            .toList(),
+      );
+    }
+  }
+
+  Future<void> _openRelatedWord(Word relatedWord) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddWordScreen(word: relatedWord)),
+    );
+    await _loadRelatedWords();
+  }
+
+  Future<void> _loadSettings() async {
+    final service = await _settings.getActiveService();
+    final prompts = <String, String>{};
+    for (final field in SettingsService.promptFields) {
+      prompts[field] = await _settings.getPrompt(field);
+    }
+    if (mounted) {
+      setState(() {
+        _aiService = service;
+        _prompts.addAll(prompts);
+      });
+    }
+  }
+
+  String _buildPrompt(String field) {
+    return (_prompts[field] ?? '').replaceAll(
+      SettingsService.wordPlaceholder,
+      _englishCtrl.text.trim(),
+    );
+  }
+
+  String _defaultEnglishPrompt() => (_prompts['english'] ?? '').replaceAll(
+    SettingsService.wordPlaceholder,
+    _chineseCtrl.text.trim(),
+  );
+
+  String _defaultExampleSentencePrompt(int index) =>
+      '使用英文單字「${_englishCtrl.text.trim()}」，'
+      '根據中文意思「${_examples[index].translationCtrl.text.trim()}」，'
+      '翻譯成英文。';
+
+  String _defaultExampleTranslationPrompt(int index) =>
+      '將以下英文例句翻譯成繁體中文：「${_examples[index].sentenceCtrl.text.trim()}」。';
+
+  /// 長按 AI 按鈕時彈出，讓使用者針對這一次呼叫臨時修改提示詞（不會存回設定）。
+  /// 取消或沒有修改則回傳 null，維持原本的預設提示詞。
+  Future<String?> _promptOverrideDialog(
+    String defaultPrompt,
+    String fieldLabel,
+  ) async {
+    final ctrl = TextEditingController(text: defaultPrompt);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('自訂本次提示詞'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '欄位：$fieldLabel',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              minLines: 4,
+              maxLines: 10,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('送出'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true ? ctrl.text.trim() : null;
+  }
+
+  void _showAiError(Object e) {
+    final message = switch (e) {
+      SocketException() ||
+      TimeoutException() ||
+      http.ClientException() => '網路連線失敗，請檢查網路狀態後再試一次',
+      Exception() => e.toString().replaceFirst('Exception: ', ''),
+      _ => e.toString(),
+    };
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('AI 回應失敗'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('關閉'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _generateEnglish({String? overridePrompt}) async {
+    if (_chineseCtrl.text.trim().isEmpty || _aiService == null) return;
+    setState(() => _loadingEnglish = true);
+    try {
+      final prompt = overridePrompt ?? _defaultEnglishPrompt();
+      final result = await _aiService!.complete(prompt);
+      _englishCtrl.text = result.trim();
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => _loadingEnglish = false);
+    }
+  }
+
+  Future<void> _generateChinese({String? overridePrompt}) async {
+    if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
+    setState(() => _loadingChinese = true);
+    try {
+      final prompt = overridePrompt ?? _buildPrompt('chinese');
+      final result = await _aiService!.complete(prompt);
+      _chineseCtrl.text = result;
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => _loadingChinese = false);
+    }
+  }
+
+  Future<void> _generateExplanation({String? overridePrompt}) async {
+    if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
+    setState(() => _loadingExplanation = true);
+    try {
+      final prompt = overridePrompt ?? _buildPrompt('explanation');
+      final result = await _aiService!.complete(prompt);
+      _explanationCtrl.text = result;
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => _loadingExplanation = false);
+    }
+  }
+
+  Future<void> _generateExampleSentence(
+    int index, {
+    String? overridePrompt,
+  }) async {
+    if (_aiService == null) return;
+    final entry = _examples[index];
+    if (entry.translationCtrl.text.trim().isEmpty) return;
+    setState(() => entry.loadingSentence = true);
+    try {
+      final content = overridePrompt ?? _defaultExampleSentencePrompt(index);
+      final prompt = '$content$_sentenceOnlyFormatSuffix';
+      final result = await _aiService!.complete(prompt);
+      entry.sentenceCtrl.text = result.trim();
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => entry.loadingSentence = false);
+    }
+  }
+
+  Future<void> _generateExampleTranslation(
+    int index, {
+    String? overridePrompt,
+  }) async {
+    if (_aiService == null) return;
+    final entry = _examples[index];
+    if (entry.sentenceCtrl.text.trim().isEmpty) return;
+    setState(() => entry.loadingTranslation = true);
+    try {
+      final content = overridePrompt ?? _defaultExampleTranslationPrompt(index);
+      final prompt = '$content$_translationOnlyFormatSuffix';
+      final result = await _aiService!.complete(prompt);
+      entry.translationCtrl.text = result.trim();
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => entry.loadingTranslation = false);
+    }
+  }
+
+  Future<void> _generateExample(int index, {String? overridePrompt}) async {
+    if (_englishCtrl.text.trim().isEmpty || _aiService == null) return;
+    setState(() => _examples[index].loading = true);
+    try {
+      final content = overridePrompt ?? _buildPrompt('example');
+      final prompt = '$content${ExampleSentence.jsonFormatSuffix}';
+      final raw = await _aiService!.complete(prompt);
+      final result = ExampleSentence.parseJson(raw);
+      _examples[index].sentenceCtrl.text = result.sentence;
+      _examples[index].translationCtrl.text = result.chineseTranslation ?? '';
+    } catch (e) {
+      if (mounted) _showAiError(e);
+    } finally {
+      if (mounted) setState(() => _examples[index].loading = false);
+    }
+  }
+
+  void _addExample() => setState(() => _examples.add(_ExampleEntry()));
+
+  void _removeExample(int index) {
+    setState(() {
+      _examples[index].dispose();
+      _examples.removeAt(index);
+    });
+  }
+
+  void _cancelEdit() {
+    final word = _currentWord!;
+    _englishCtrl.text = word.english;
+    _chineseCtrl.text = word.chinese;
+    _explanationCtrl.text = word.englishExplanation ?? '';
+    _notesCtrl.text = word.notes ?? '';
+    for (final e in _examples) {
+      e.dispose();
+    }
+    _examples.clear();
+    for (final ex in word.examples) {
+      _examples.add(
+        _ExampleEntry(
+          sentence: ex.sentence,
+          translation: ex.chineseTranslation ?? '',
+        ),
+      );
+    }
+    setState(() {
+      _proficiency = word.proficiency;
+      _excludeFromQuiz = word.excludeFromQuiz;
+      _excludeFromAiQuiz = word.excludeFromAiQuiz;
+      _isEditing = false;
+    });
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final english = _englishCtrl.text.trim();
+    final invalidIndices = <int>[];
+    for (int i = 0; i < _examples.length; i++) {
+      final sentence = _examples[i].sentenceCtrl.text.trim();
+      if (sentence.isNotEmpty &&
+          !sentence.toLowerCase().contains(english.toLowerCase())) {
+        invalidIndices.add(i + 1);
+      }
+    }
+    if (invalidIndices.isNotEmpty && mounted) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('例句未包含單字'),
+          content: Text(
+            '例句 ${invalidIndices.join('、')} 未包含英文單字「$english」。\n\n'
+            '例句仍可儲存，但複習時將不會納入出題範圍。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('返回修改'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('仍要儲存'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
     }
 
-    return Scaffold(
-      appBar: appBar,
-      body: DotGridBackground(child: bodyContent),
+    final examples = _examples
+        .where((e) => e.sentenceCtrl.text.trim().isNotEmpty)
+        .map(
+          (e) => ExampleSentence(
+            sentence: e.sentenceCtrl.text.trim(),
+            chineseTranslation: e.translationCtrl.text.trim().isEmpty
+                ? null
+                : e.translationCtrl.text.trim(),
+          ),
+        )
+        .toList();
+
+    final word = Word(
+      id: _currentWord?.id,
+      english: english,
+      chinese: _chineseCtrl.text.trim(),
+      englishExplanation: _explanationCtrl.text.trim().isEmpty
+          ? null
+          : _explanationCtrl.text.trim(),
+      examples: examples,
+      createdAt: _currentWord?.createdAt ?? DateTime.now(),
+      wordBookId: _currentWord?.wordBookId ?? widget.wordBookId!,
+      proficiency: _proficiency,
+      notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      excludeFromQuiz: _excludeFromQuiz,
+      excludeFromAiQuiz: _excludeFromAiQuiz,
     );
+    try {
+      if (_currentWord == null) {
+        final newId = await _db.insertWord(word);
+        if (_relatedWords.isNotEmpty) {
+          await _db.addWordRelations(
+            newId,
+            _relatedWords.map((w) => w.id!).toList(),
+          );
+        }
+        WidgetService.syncWords();
+        if (!mounted) return;
+        if (widget.viewAfterCreate) {
+          setState(() {
+            _currentWord = word.copyWith(id: newId);
+            _isEditing = false;
+          });
+        } else {
+          Navigator.pop(context);
+        }
+      } else {
+        await _db.updateWord(word);
+        WidgetService.syncWords();
+        if (mounted) {
+          setState(() {
+            _currentWord = word;
+            _isEditing = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) showErrorSnackBar(context, '儲存失敗：$e');
+    }
   }
 }
