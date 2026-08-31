@@ -61,6 +61,22 @@ class _WordListScreenState extends State<WordListScreen> {
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_isSelecting,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _exitSelectMode();
+      },
+      child: Scaffold(
+        appBar: _isSelecting ? _selectingAppBar : _normalAppBar,
+        body: DotGridBackground(child: _wordListView),
+        bottomNavigationBar: _isSelecting ? _moveToBookBar : null,
+        floatingActionButton: _isSelecting ? null : _addWordFab,
+      ),
+    );
+  }
+
   Future<void> _loadWords() async {
     final words = await _db.getWordsByWordBook(widget.wordBook.id!);
     setState(() {
@@ -323,21 +339,7 @@ class _WordListScreenState extends State<WordListScreen> {
     if (mounted) setState(() => _wordBook = updated);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_isSelecting,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _exitSelectMode();
-      },
-      child: Scaffold(
-        appBar: _isSelecting ? _selectingAppBar : _normalAppBar,
-        body: DotGridBackground(child: _wordListView),
-        bottomNavigationBar: _isSelecting ? _moveToBookBar : null,
-        floatingActionButton: _isSelecting ? null : _addWordFab,
-      ),
-    );
-  }
+
 
   AppBar get _selectingAppBar {
     final allSelected = _selectedIds.length == _words.length;
