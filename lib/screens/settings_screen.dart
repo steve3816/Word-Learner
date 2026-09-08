@@ -308,7 +308,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ExpansionTile(
       shape: const Border(),
       collapsedShape: const Border(),
-      leading: const Icon(Icons.school_outlined),
+      leading: const Icon(Icons.history_edu),
       title: const Text(
         '複習設定',
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
