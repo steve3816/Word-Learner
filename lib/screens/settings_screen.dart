@@ -466,19 +466,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
   );
 
-  Widget get _saveButton => Material(
-    color: Colors.transparent,
-    child: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(40, 8, 40, 16),
-        child: GradientButton(
-          onPressed: _save,
-          height: 56,
-          child: const Text('儲存'),
+  Widget get _saveButton {
+    // 鍵盤高度（各裝置由系統回報），拿來把儲存鍵頂到鍵盤上緣，不被蓋住。
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(40, 8, 40, 16),
+            child: GradientButton(
+              onPressed: _save,
+              height: 56,
+              child: const Text('儲存'),
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Future<void> _loadSettings() async {
     final provider = await _settings.getSelectedProvider();
