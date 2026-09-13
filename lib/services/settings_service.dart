@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ai_service.dart';
+import 'free_ai_service.dart';
 import 'openai_compatible_service.dart';
 import 'claude_service.dart';
 import 'gemini_service.dart';
@@ -10,6 +11,9 @@ import '../utils/proficiency_util.dart';
 
 class SettingsService {
   static const _providerKey = 'selected_provider';
+  // 存在 _providerKey 底下、代表使用者主動選「無」的哨兵值，跟「從未設定過」
+  // （key 不存在）區分開來，這樣才不會把使用者刻意關閉 AI 的選擇又蓋回預設值。
+  static const _providerNoneValue = 'none';
   static const _keyPrefix = 'api_key_';
   static const _promptPrefix = 'prompt_';
   static const _quizMaxProficiencyKey = 'quiz_max_proficiency';
@@ -133,24 +137,23 @@ class SettingsService {
     }
   }
 
+  /// 從未設定過（key 不存在）時預設用「內建」，不需要使用者自己設定就能用 AI 功能；
+  /// 使用者主動選「無」則存成哨兵值，之後都乖乖回傳 null，不會被預設值蓋回去。
   Future<AiProvider?> getSelectedProvider() async {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getString(_providerKey);
-    if (value == null) return null;
+    if (value == null) return AiProvider.free;
+    if (value == _providerNoneValue) return null;
     try {
       return AiProvider.values.firstWhere((e) => e.name == value);
     } catch (_) {
-      return null;
+      return AiProvider.free;
     }
   }
 
   Future<void> setSelectedProvider(AiProvider? provider) async {
     final prefs = await SharedPreferences.getInstance();
-    if (provider == null) {
-      await prefs.remove(_providerKey);
-    } else {
-      await prefs.setString(_providerKey, provider.name);
-    }
+    await prefs.setString(_providerKey, provider?.name ?? _providerNoneValue);
   }
 
   Future<String?> getApiKey(AiProvider provider) async {
@@ -166,6 +169,8 @@ class SettingsService {
   Future<AiService?> getActiveService() async {
     final provider = await getSelectedProvider();
     if (provider == null) return null;
+    // 免費方案打自家後端，不需要使用者自己的 API Key。
+    if (provider == AiProvider.free) return const FreeAiService();
     final key = await getApiKey(provider);
     if (key == null || key.isEmpty) return null;
     switch (provider) {
@@ -185,6 +190,8 @@ class SettingsService {
         return ClaudeService(apiKey: key);
       case AiProvider.gemini:
         return GeminiService(apiKey: key);
+      case AiProvider.free:
+        return const FreeAiService(); // 已在上方提早回傳，這裡只是滿足窮舉
     }
   }
 

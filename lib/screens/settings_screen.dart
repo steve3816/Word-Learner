@@ -30,11 +30,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   RewardedAd? _rewardedAd;
 
-  /// 是否已經設定好可用的 AI（選了提供者、且該提供者的 API Key 有填），
-  /// 「AI 出題」開關要靠這個才能打開。
+  /// 是否已經設定好可用的 AI（選了提供者、且該提供者的 API Key 有填；
+  /// 免費方案不需要 API Key，選了就算可用），「AI 出題」開關要靠這個才能打開。
   bool get _aiFeatureEnabled =>
       _selectedProvider != null &&
-      (_keyControllers[_selectedProvider]?.text.trim().isNotEmpty ?? false);
+      (_selectedProvider == AiProvider.free ||
+          (_keyControllers[_selectedProvider]?.text.trim().isNotEmpty ??
+              false));
 
   @override
   void initState() {
@@ -168,7 +170,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const RadioListTile<AiProvider?>(title: Text('無'), value: null),
               ...AiProvider.values.map(
                 (p) => RadioListTile<AiProvider?>(
-                  title: Text('${p.displayName} (${p.modelName})'),
+                  title: Text(
+                    p.modelName.isEmpty
+                        ? p.displayName
+                        : '${p.displayName} (${p.modelName})',
+                  ),
                   value: p,
                 ),
               ),
@@ -191,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
       childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       children: [
-        ...AiProvider.values.map(
+        ...AiProvider.values.where((p) => p != AiProvider.free).map(
           (p) => Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: TextField(

@@ -6,6 +6,9 @@ abstract class AppConfig {
   /// 看一次獎勵廣告後，接下來多久不顯示任何廣告。
   static const Duration adFreeDuration = Duration(hours: 24);
 
+  /// 免費 AI provider 的自家後端，見 API.md。
+  static const freeAiBaseUrl = 'https://haword-backend.vercel.app';
+
   // ── 廣告單元 ID ──────────────────────────────────────────────
   // Google 官方測試 ID，debug 模式下使用，任何裝置都會拿到測試廣告。
   static const iosTestBannerId = 'ca-app-pub-3940256099942544/2934735716';
